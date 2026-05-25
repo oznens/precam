@@ -20,13 +20,29 @@ class GeckoTerminalClient:
             r.raise_for_status()
             return r.json()
 
-    async def trending_pools(self, page: int = 1, duration: str = "24h") -> list[dict[str, Any]]:
-        """Return Solana trending pools. duration in {5m, 1h, 6h, 24h}."""
-        data = await self._get(
-            "/networks/solana/trending_pools",
-            params={"page": page, "duration": duration},
-        )
-        return [_shape_pool(p) for p in (data.get("data") or [])]
+    async def trending_pools(
+        self, page: int = 1, duration: str = "24h", pages: int = 1
+    ) -> list[dict[str, Any]]:
+        """Return Solana trending pools. duration in {5m, 1h, 6h, 24h}.
+
+        GeckoTerminal returns 20 pools per page, up to page 10. Set `pages` > 1
+        to walk multiple pages and merge (deduped on pool address)."""
+        seen: set[str] = set()
+        out: list[dict[str, Any]] = []
+        for p in range(page, page + pages):
+            data = await self._get(
+                "/networks/solana/trending_pools",
+                params={"page": p, "duration": duration},
+            )
+            batch = [_shape_pool(x) for x in (data.get("data") or [])]
+            if not batch:
+                break
+            for pool in batch:
+                if pool["pool_address"] in seen:
+                    continue
+                seen.add(pool["pool_address"])
+                out.append(pool)
+        return out
 
     async def top_pools(self, page: int = 1, sort: str = "h24_volume_usd_desc") -> list[dict[str, Any]]:
         """Top Solana pools sorted by 24h volume (default) or other fields."""

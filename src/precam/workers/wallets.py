@@ -59,7 +59,8 @@ async def discover_from_trending(
     helius = HeliusClient()
     sol_usd = await _get_sol_usd_estimate(helius)
 
-    pools = await gt.trending_pools()
+    pages_needed = max(1, (top_pools + 19) // 20)
+    pools = await gt.trending_pools(pages=pages_needed)
     pools = pools[:top_pools]
     if not pools:
         logger.warning("no trending pools returned")
