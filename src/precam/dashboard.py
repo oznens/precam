@@ -77,11 +77,13 @@ async def wallets_page(
     min_closed: int = 5,
     limit: int = 100,
     watched_only: int = 0,
+    show_bots: int = 0,
 ):
     async with SessionLocal() as s:
-        res = await s.execute(
-            select(WalletStat).where(WalletStat.closed_positions >= min_closed)
-        )
+        q = select(WalletStat).where(WalletStat.closed_positions >= min_closed)
+        if not show_bots:
+            q = q.where(WalletStat.is_likely_bot == False)  # noqa: E712
+        res = await s.execute(q)
         stats = list(res.scalars().all())
         wallets = {
             w.address: w
@@ -91,6 +93,13 @@ async def wallets_page(
         watched_count = (
             await s.execute(
                 select(func.count(Wallet.address)).where(Wallet.is_watched == True)  # noqa: E712
+            )
+        ).scalar_one()
+        bots_total = (
+            await s.execute(
+                select(func.count(WalletStat.wallet)).where(
+                    WalletStat.is_likely_bot == True  # noqa: E712
+                )
             )
         ).scalar_one()
 
@@ -116,6 +125,8 @@ async def wallets_page(
             "total_wallets": total_wallets,
             "watched_count": watched_count,
             "watched_only": bool(watched_only),
+            "show_bots": bool(show_bots),
+            "bots_total": bots_total,
             "qualified": len(stats),
         },
     )

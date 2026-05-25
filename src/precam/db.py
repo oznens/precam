@@ -79,6 +79,10 @@ class WalletStat(SQLModel, table=True):
     avg_loss_pct: float = 0.0
     expectancy: float = 0.0
     total_realized_pnl_usd: float = 0.0
+    avg_trade_size_usd: float = 0.0
+    avg_hold_minutes: float = 0.0
+    trades_per_day: float = 0.0
+    is_likely_bot: bool = False
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 
@@ -233,6 +237,10 @@ SessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=
 _ADDITIVE_MIGRATIONS: list[tuple[str, str, str]] = [
     ("wallet", "watched_at", "TIMESTAMP"),
     ("wallet", "last_seen_sig", "VARCHAR"),
+    ("walletstat", "avg_trade_size_usd", "FLOAT DEFAULT 0"),
+    ("walletstat", "avg_hold_minutes", "FLOAT DEFAULT 0"),
+    ("walletstat", "trades_per_day", "FLOAT DEFAULT 0"),
+    ("walletstat", "is_likely_bot", "BOOLEAN DEFAULT 0"),
 ]
 
 

@@ -67,41 +67,105 @@ def build_positions(trades: Iterable[dict]) -> list[dict]:
     return out
 
 
-def compute_stats(positions: list[dict]) -> dict:
-    """Aggregate closed positions into wallet-level stats (win rate, expectancy, ...)."""
+def classify_bot(
+    *,
+    avg_trade_size_usd: float,
+    avg_hold_minutes: float,
+    trades_per_day: float,
+    win_rate: float,
+    avg_loss_pct: float,
+    closed_n: int,
+) -> bool:
+    """Heuristic: looks like an automated sniper / MEV bot rather than a human.
+
+    Bot signatures (any one triggers):
+      - micro stakes always           (avg <$10 with any meaningful sample)
+      - tiny stakes + high frequency  (avg <$50, >20 trades/day)
+      - very short hold time          (avg <5 min, with enough samples)
+      - sniper PnL distribution       (>95% wins, tiny losses, big sample)
+    """
+    if 0 < avg_trade_size_usd < 10 and closed_n >= 5:
+        return True
+    if 0 < avg_trade_size_usd < 50 and trades_per_day > 20:
+        return True
+    if 0 < avg_hold_minutes < 5 and closed_n >= 10:
+        return True
+    if win_rate > 0.95 and avg_loss_pct > -10 and closed_n >= 10:
+        return True
+    return False
+
+
+def compute_stats(positions: list[dict], trades: list[dict] | None = None) -> dict:
+    """Aggregate closed positions into wallet-level stats (win rate, expectancy, ...).
+
+    If `trades` is also provided, derive bot-detection metrics (avg trade size,
+    trades per day, avg hold minutes) and classify is_likely_bot.
+    """
     closed = [p for p in positions if p["status"] == "closed" and p["bought_usd"] > 0]
     total_positions = len(positions)
     closed_n = len(closed)
-    if closed_n == 0:
-        return {
-            "total_positions": total_positions,
-            "closed_positions": 0,
-            "wins": 0, "losses": 0,
-            "win_rate": 0.0,
-            "avg_win_pct": 0.0,
-            "avg_loss_pct": 0.0,
-            "expectancy": 0.0,
-            "total_realized_pnl_usd": 0.0,
-            "updated_at": datetime.utcnow(),
-        }
 
-    wins = [p for p in closed if p["realized_pnl_usd"] > 0]
-    losses = [p for p in closed if p["realized_pnl_usd"] <= 0]
-    win_rate = len(wins) / closed_n
-    avg_win = sum(p["realized_pnl_pct"] for p in wins) / len(wins) if wins else 0.0
-    avg_loss = sum(p["realized_pnl_pct"] for p in losses) / len(losses) if losses else 0.0
-    expectancy = win_rate * avg_win + (1 - win_rate) * avg_loss
-    total_pnl = sum(p["realized_pnl_usd"] for p in closed)
-
-    return {
+    base = {
         "total_positions": total_positions,
         "closed_positions": closed_n,
-        "wins": len(wins),
-        "losses": len(losses),
-        "win_rate": round(win_rate, 4),
-        "avg_win_pct": round(avg_win, 2),
-        "avg_loss_pct": round(avg_loss, 2),
-        "expectancy": round(expectancy, 2),
-        "total_realized_pnl_usd": round(total_pnl, 2),
+        "wins": 0,
+        "losses": 0,
+        "win_rate": 0.0,
+        "avg_win_pct": 0.0,
+        "avg_loss_pct": 0.0,
+        "expectancy": 0.0,
+        "total_realized_pnl_usd": 0.0,
+        "avg_trade_size_usd": 0.0,
+        "avg_hold_minutes": 0.0,
+        "trades_per_day": 0.0,
+        "is_likely_bot": False,
         "updated_at": datetime.utcnow(),
     }
+
+    if closed_n:
+        wins = [p for p in closed if p["realized_pnl_usd"] > 0]
+        losses = [p for p in closed if p["realized_pnl_usd"] <= 0]
+        win_rate = len(wins) / closed_n
+        avg_win = sum(p["realized_pnl_pct"] for p in wins) / len(wins) if wins else 0.0
+        avg_loss = sum(p["realized_pnl_pct"] for p in losses) / len(losses) if losses else 0.0
+        total_pnl = sum(p["realized_pnl_usd"] for p in closed)
+        hold_mins = [
+            max((p["closed_at"] - p["opened_at"]).total_seconds() / 60.0, 0.0)
+            for p in closed
+            if p.get("closed_at") and p.get("opened_at")
+        ]
+        avg_hold = sum(hold_mins) / len(hold_mins) if hold_mins else 0.0
+        base.update({
+            "wins": len(wins),
+            "losses": len(losses),
+            "win_rate": round(win_rate, 4),
+            "avg_win_pct": round(avg_win, 2),
+            "avg_loss_pct": round(avg_loss, 2),
+            "expectancy": round(win_rate * avg_win + (1 - win_rate) * avg_loss, 2),
+            "total_realized_pnl_usd": round(total_pnl, 2),
+            "avg_hold_minutes": round(avg_hold, 1),
+        })
+
+    if trades:
+        sizes = [t["amount_usd"] for t in trades if t.get("amount_usd", 0) > 0]
+        avg_size = sum(sizes) / len(sizes) if sizes else 0.0
+        block_times = [t["block_time"] for t in trades if t.get("block_time")]
+        if len(block_times) >= 2:
+            span_sec = max(
+                (max(block_times) - min(block_times)).total_seconds(), 1.0
+            )
+            tpd = len(trades) / (span_sec / 86400.0)
+        else:
+            tpd = 0.0
+        base["avg_trade_size_usd"] = round(avg_size, 2)
+        base["trades_per_day"] = round(tpd, 2)
+        base["is_likely_bot"] = classify_bot(
+            avg_trade_size_usd=base["avg_trade_size_usd"],
+            avg_hold_minutes=base["avg_hold_minutes"],
+            trades_per_day=base["trades_per_day"],
+            win_rate=base["win_rate"],
+            avg_loss_pct=base["avg_loss_pct"],
+            closed_n=closed_n,
+        )
+
+    return base

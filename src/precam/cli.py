@@ -277,13 +277,19 @@ def wallet_discover(
     top_pools: int = typer.Option(15, help="Number of trending pools to scan"),
     pages: int = typer.Option(3, help="Helius pagination per pool (~100 txs each)"),
     min_buys: int = typer.Option(2, help="Min trending-pool buys to promote a wallet"),
+    min_trade_size: float = typer.Option(
+        200.0, help="Ignore buys smaller than this USD (filters sniper bots)"
+    ),
 ) -> None:
     """Discover candidate smart wallets via trending pools' early buyers."""
 
     async def _run():
         await init_db()
         n = await discover_from_trending(
-            top_pools=top_pools, max_pages_per_pool=pages, min_buys_to_promote=min_buys
+            top_pools=top_pools,
+            max_pages_per_pool=pages,
+            min_buys_to_promote=min_buys,
+            min_trade_size_usd=min_trade_size,
         )
         typer.echo(f"added {n} new wallet(s)")
 
@@ -315,16 +321,24 @@ def wallet_rank(
     limit: int = typer.Option(30, help="How many to print"),
     min_closed: int = typer.Option(5, help="Min closed positions to qualify"),
     by: str = typer.Option("expectancy", help="Sort key: expectancy | win_rate | pnl"),
+    include_bots: bool = typer.Option(
+        False, "--include-bots", help="Include is_likely_bot wallets (default: hide)"
+    ),
 ) -> None:
     """Print the smart-wallet leaderboard sorted by chosen metric."""
 
     async def _run():
         await init_db()
         async with SessionLocal() as s:
-            res = await s.execute(select(WalletStat).where(WalletStat.closed_positions >= min_closed))
+            q = select(WalletStat).where(WalletStat.closed_positions >= min_closed)
+            if not include_bots:
+                q = q.where(WalletStat.is_likely_bot == False)  # noqa: E712
+            res = await s.execute(q)
             stats = list(res.scalars().all())
         if not stats:
-            typer.echo(f"(no wallets with ≥{min_closed} closed positions yet)")
+            typer.echo(
+                f"(no qualifying wallets — try --include-bots or lower --min-closed)"
+            )
             return
         key = {
             "expectancy": lambda r: r.expectancy,
@@ -333,14 +347,17 @@ def wallet_rank(
         }[by]
         stats.sort(key=key, reverse=True)
         typer.echo(
-            f"{'wallet':<46} {'closed':>6} {'win%':>5} {'avg+':>7} {'avg-':>7} "
-            f"{'exp%':>7} {'pnl$':>12}"
+            f"{'wallet':<46} {'cls':>4} {'win%':>4} {'exp%':>7} "
+            f"{'pnl$':>9} {'size$':>7} {'hold':>6} {'bot'}"
         )
         for r in stats[:limit]:
+            bot = "🤖" if r.is_likely_bot else ""
+            hold = f"{r.avg_hold_minutes:.0f}m" if r.avg_hold_minutes < 60 else f"{r.avg_hold_minutes/60:.1f}h"
             typer.echo(
-                f"{r.wallet:<46} {r.closed_positions:>6} "
-                f"{r.win_rate*100:>4.0f}% {r.avg_win_pct:>+6.0f}% {r.avg_loss_pct:>+6.0f}% "
-                f"{r.expectancy:>+6.1f}% {r.total_realized_pnl_usd:>12,.0f}"
+                f"{r.wallet:<46} {r.closed_positions:>4} "
+                f"{r.win_rate*100:>3.0f}% {r.expectancy:>+6.1f}% "
+                f"{r.total_realized_pnl_usd:>9,.0f} {r.avg_trade_size_usd:>7,.0f} "
+                f"{hold:>6} {bot}"
             )
 
     _arun(_run())
@@ -399,13 +416,19 @@ def wallet_auto_watch(
     top: int = typer.Option(20, help="How many top wallets to promote"),
     min_closed: int = typer.Option(5, help="Min closed positions to qualify"),
     min_expectancy: float = typer.Option(5.0, help="Min expectancy % per trade"),
+    include_bots: bool = typer.Option(
+        False, "--include-bots", help="Allow is_likely_bot wallets (default: skip)"
+    ),
 ) -> None:
     """Promote top-N qualifying wallets (by expectancy) to the watch list."""
 
     async def _run():
         await init_db()
         added, total = await auto_watch_top(
-            top=top, min_closed=min_closed, min_expectancy=min_expectancy
+            top=top,
+            min_closed=min_closed,
+            min_expectancy=min_expectancy,
+            include_bots=include_bots,
         )
         typer.echo(f"newly watched: {added}  |  total watched: {total}")
 

@@ -35,11 +35,17 @@ async def _get_sol_usd_estimate(helius: HeliusClient) -> float:
 
 
 async def discover_from_trending(
-    *, top_pools: int = 15, max_pages_per_pool: int = 3, min_buys_to_promote: int = 2
+    *,
+    top_pools: int = 15,
+    max_pages_per_pool: int = 3,
+    min_buys_to_promote: int = 2,
+    min_trade_size_usd: float = 200.0,
 ) -> int:
     """Walk trending pools -> parse swaps -> aggregate wallets that BOUGHT the base token.
 
-    Wallets appearing in >= min_buys_to_promote trending pools are saved as candidates.
+    Only counts BUY trades whose amount_usd >= min_trade_size_usd to filter out
+    sniper bots (which typically use $1-50 micro-trades). Wallets appearing in
+    >= min_buys_to_promote trending pools are saved as candidates.
     Returns count of newly inserted wallets.
     """
     if not settings.helius_api_key:
@@ -75,13 +81,19 @@ async def discover_from_trending(
             continue
 
         buyers_here: set[str] = set()
+        small_skipped = 0
         for tx in txs:
             trades = parse_swap(tx, sol_usd=sol_usd)
             for t in trades:
-                if t["side"] == "buy" and t["mint"] == base_mint and t["wallet"]:
-                    buyers_here.add(t["wallet"])
+                if t["side"] != "buy" or t["mint"] != base_mint or not t["wallet"]:
+                    continue
+                if t["amount_usd"] < min_trade_size_usd:
+                    small_skipped += 1
+                    continue
+                buyers_here.add(t["wallet"])
         logger.info(
-            f"  {pool['base_symbol']:<14} {len(txs):>3} swap-tx -> {len(buyers_here)} unique buyers"
+            f"  {pool['base_symbol']:<14} {len(txs):>3} swap-tx -> {len(buyers_here)} buyers "
+            f"(skipped {small_skipped} <${min_trade_size_usd:.0f})"
         )
         for w in buyers_here:
             wallet_buys[w] += 1
@@ -131,7 +143,7 @@ async def refresh_wallet(address: str, *, max_pages: int = 5) -> dict:
         all_trades.extend(parse_swap(tx, sol_usd=sol_usd))
 
     positions = build_positions(all_trades)
-    stats = compute_stats(positions)
+    stats = compute_stats(positions, trades=all_trades)
 
     async with SessionLocal() as s:
         await s.execute(delete(Trade).where(Trade.wallet == address))
@@ -157,10 +169,13 @@ async def refresh_wallet(address: str, *, max_pages: int = 5) -> dict:
             s.add(w)
         await s.commit()
 
+    bot_flag = " 🤖BOT" if stats.get("is_likely_bot") else ""
     logger.success(
         f"{address[:6]}.. trades={len(all_trades)} positions={len(positions)} "
         f"closed={stats['closed_positions']} win_rate={stats['win_rate']*100:.0f}% "
-        f"expectancy={stats['expectancy']:+.1f}% pnl=${stats['total_realized_pnl_usd']:,.0f}"
+        f"expectancy={stats['expectancy']:+.1f}% pnl=${stats['total_realized_pnl_usd']:,.0f} "
+        f"avg_size=${stats.get('avg_trade_size_usd', 0):.0f} "
+        f"hold={stats.get('avg_hold_minutes', 0):.0f}m{bot_flag}"
     )
     return stats
 

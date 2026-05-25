@@ -15,17 +15,19 @@
       <div class="text-sm text-zinc-400">
         tracked: <span class="text-zinc-100">{{ total_wallets }}</span> ·
         qualified: <span class="text-emerald-400">{{ qualified }}</span> ·
-        watched: <span class="text-amber-400">{{ watched_count }}</span>
+        watched: <span class="text-amber-400">{{ watched_count }}</span> ·
+        bots: <span class="text-rose-400">{{ bots_total }}</span>
       </div>
     </header>
 
     <nav class="mb-4 text-sm flex gap-4 items-center">
       <span class="text-zinc-500">sort:</span>
       {% for opt in ['expectancy', 'win_rate', 'pnl'] %}
-        <a class="px-2 py-1 rounded {{ 'bg-emerald-900' if sort_by == opt else 'hover:bg-zinc-900' }}" href="/wallets?by={{ opt }}&min_closed={{ min_closed }}{% if watched_only %}&watched_only=1{% endif %}">{{ opt }}</a>
+        <a class="px-2 py-1 rounded {{ 'bg-emerald-900' if sort_by == opt else 'hover:bg-zinc-900' }}" href="/wallets?by={{ opt }}&min_closed={{ min_closed }}{% if watched_only %}&watched_only=1{% endif %}{% if show_bots %}&show_bots=1{% endif %}">{{ opt }}</a>
       {% endfor %}
       <span class="ml-4 text-zinc-500">·</span>
-      <a class="px-2 py-1 rounded {{ 'bg-amber-900' if watched_only else 'hover:bg-zinc-900' }}" href="/wallets?by={{ sort_by }}&min_closed={{ min_closed }}{% if not watched_only %}&watched_only=1{% endif %}">watched only</a>
+      <a class="px-2 py-1 rounded {{ 'bg-amber-900' if watched_only else 'hover:bg-zinc-900' }}" href="/wallets?by={{ sort_by }}&min_closed={{ min_closed }}{% if not watched_only %}&watched_only=1{% endif %}{% if show_bots %}&show_bots=1{% endif %}">watched only</a>
+      <a class="px-2 py-1 rounded {{ 'bg-rose-900' if show_bots else 'hover:bg-zinc-900' }}" href="/wallets?by={{ sort_by }}&min_closed={{ min_closed }}{% if watched_only %}&watched_only=1{% endif %}{% if not show_bots %}&show_bots=1{% endif %}">{{ 'humans + bots' if show_bots else 'humans only' }}</a>
       <a class="ml-auto text-zinc-500 hover:text-zinc-100" href="/">← signals</a>
     </nav>
 
@@ -40,15 +42,18 @@
             <th class="px-3 py-2 text-right">avg loss</th>
             <th class="px-3 py-2 text-right">expectancy</th>
             <th class="px-3 py-2 text-right">realized pnl</th>
+            <th class="px-3 py-2 text-right">size$</th>
+            <th class="px-3 py-2 text-right">hold</th>
             <th class="px-3 py-2">via</th>
           </tr>
         </thead>
         <tbody>
         {% for row in rows %}
           {% set st = row.stat %}{% set w = row.wallet %}
-          <tr class="border-t border-zinc-900 hover:bg-zinc-900/40">
+          <tr class="border-t border-zinc-900 hover:bg-zinc-900/40 {{ 'opacity-60' if st.is_likely_bot else '' }}">
             <td class="px-3 py-2">
               {% if w and w.is_watched %}<span class="mr-1 text-amber-400" title="watched">●</span>{% endif %}
+              {% if st.is_likely_bot %}<span class="mr-1" title="likely bot">🤖</span>{% endif %}
               <a class="text-sky-400 hover:underline" href="/wallet/{{ st.wallet }}">{{ st.wallet[:6] }}…{{ st.wallet[-4:] }}</a>
             </td>
             <td class="px-3 py-2 text-right">{{ st.closed_positions }}</td>
@@ -57,6 +62,8 @@
             <td class="px-3 py-2 text-right text-rose-400">{{ '%+.0f'|format(st.avg_loss_pct) }}%</td>
             <td class="px-3 py-2 text-right font-bold {{ 'text-emerald-400' if st.expectancy > 0 else 'text-rose-400' }}">{{ '%+.1f'|format(st.expectancy) }}%</td>
             <td class="px-3 py-2 text-right {{ 'text-emerald-400' if st.total_realized_pnl_usd > 0 else 'text-rose-400' }}">${{ '{:,.0f}'.format(st.total_realized_pnl_usd) }}</td>
+            <td class="px-3 py-2 text-right text-zinc-400">${{ '{:,.0f}'.format(st.avg_trade_size_usd) }}</td>
+            <td class="px-3 py-2 text-right text-zinc-400">{% if st.avg_hold_minutes < 60 %}{{ '%.0f'|format(st.avg_hold_minutes) }}m{% else %}{{ '%.1f'|format(st.avg_hold_minutes/60) }}h{% endif %}</td>
             <td class="px-3 py-2 text-xs text-zinc-500">{{ w.discovered_via if w else '-' }}</td>
           </tr>
         {% else %}

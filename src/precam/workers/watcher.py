@@ -260,10 +260,12 @@ async def watch_forever() -> None:
 
 
 async def auto_watch_top(
-    *, top: int = 20, min_closed: int = 5, min_expectancy: float = 5.0
+    *, top: int = 20, min_closed: int = 5, min_expectancy: float = 5.0,
+    include_bots: bool = False,
 ) -> tuple[int, int]:
     """Promote top-N wallets (by expectancy) to is_watched=True.
 
+    By default skips wallets flagged is_likely_bot (sniper / MEV signatures).
     Returns (newly_watched, total_watched).
     """
     from ..db import WalletStat
@@ -273,6 +275,8 @@ async def auto_watch_top(
             .where(WalletStat.closed_positions >= min_closed)
             .where(WalletStat.expectancy >= min_expectancy)
         )
+        if not include_bots:
+            q = q.where(WalletStat.is_likely_bot == False)  # noqa: E712
         stats = list((await s.execute(q)).scalars().all())
         stats.sort(key=lambda r: r.expectancy, reverse=True)
         picks = stats[:top]
