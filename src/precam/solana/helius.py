@@ -4,10 +4,23 @@ import httpx
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from ..config import settings
+from ._ratelimit import AsyncRateLimiter
+
+
+# Process-global limiter. Helius free tier nominally allows 10 RPS but in
+# practice spits HTTP 429 ("rate limited", code -32429) at any sustained pace
+# above ~3-4 RPS once you've spent some daily credits. 3 RPS is the sweet spot:
+# slow enough to never trip the limit, fast enough that a 50-wallet refresh
+# (~150 calls) finishes in under a minute.
+_HELIUS_LIMITER = AsyncRateLimiter(per_second=3.0)
 
 
 class HeliusClient:
-    """Minimal Helius/Solana RPC wrapper. Falls back to public RPC if no key set."""
+    """Minimal Helius/Solana RPC wrapper. Falls back to public RPC if no key set.
+
+    All outbound HTTP is gated through a process-global token-bucket limiter
+    so concurrent refresh/discover jobs naturally serialize instead of bursting.
+    """
 
     def __init__(self, timeout: float = 12.0) -> None:
         self.rpc = settings.helius_rpc
@@ -16,9 +29,10 @@ class HeliusClient:
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=1, max=8))
     async def _rpc(self, method: str, params: list[Any]) -> Any:
         payload = {"jsonrpc": "2.0", "id": 1, "method": method, "params": params}
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
-            r = await client.post(self.rpc, json=payload)
-            r.raise_for_status()
+        async with _HELIUS_LIMITER:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                r = await client.post(self.rpc, json=payload)
+                r.raise_for_status()
         body = r.json()
         if "error" in body:
             raise RuntimeError(f"RPC error: {body['error']}")
@@ -97,8 +111,16 @@ class HeliusClient:
             params["type"] = type_
         if before:
             params["before"] = before
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
-            r = await client.get(url, params=params)
+        async with _HELIUS_LIMITER:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                r = await client.get(url, params=params)
+        if r.status_code >= 400:
+            # surface the real error before tenacity wraps everything
+            from loguru import logger as _lg
+            _lg.warning(
+                f"helius {r.status_code} for {address[:6]}.. "
+                f"body={r.text[:200]!r}"
+            )
             r.raise_for_status()
         return r.json() or []
 

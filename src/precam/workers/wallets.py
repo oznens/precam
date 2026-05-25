@@ -292,12 +292,13 @@ async def refresh_wallet(address: str, *, max_pages: int = 5) -> dict:
 
 
 async def refresh_all(
-    *, limit: int | None = None, concurrency: int = 2, inter_delay: float = 1.0
+    *, limit: int | None = None, concurrency: int = 4
 ) -> tuple[int, int]:
     """Refresh every wallet in the DB (or first N).
 
-    Returns (succeeded, failed). Uses bounded concurrency + an inter-call
-    delay to stay under Helius free-tier rate limits.
+    Returns (succeeded, failed). HeliusClient has a process-global token-bucket
+    limiter, so we can run with healthy concurrency — the limiter naturally
+    serializes the actual HTTP calls.
     """
     async with SessionLocal() as s:
         q = select(Wallet).order_by(Wallet.discovered_at.desc())
@@ -317,8 +318,6 @@ async def refresh_all(
             except Exception as e:
                 logger.error(f"{addr[:6]}.. refresh failed: {e}")
                 failed += 1
-            if inter_delay > 0:
-                await asyncio.sleep(inter_delay)
 
     await asyncio.gather(*(_one(w.address) for w in wallets))
     return succeeded, failed
