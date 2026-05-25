@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     min_liquidity_usd: float = 5000.0
     early_max_age_min: int = 720
 
+    watcher_interval: int = 90
+    watcher_min_buy_usd: float = 50.0
+    watcher_convergence_window_min: int = 60
+
     dashboard_host: str = "0.0.0.0"
     dashboard_port: int = 8000
 

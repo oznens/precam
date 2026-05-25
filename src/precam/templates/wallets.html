@@ -14,15 +14,18 @@
       </h1>
       <div class="text-sm text-zinc-400">
         tracked: <span class="text-zinc-100">{{ total_wallets }}</span> ·
-        qualified (≥{{ min_closed }} closed): <span class="text-emerald-400">{{ qualified }}</span>
+        qualified: <span class="text-emerald-400">{{ qualified }}</span> ·
+        watched: <span class="text-amber-400">{{ watched_count }}</span>
       </div>
     </header>
 
     <nav class="mb-4 text-sm flex gap-4 items-center">
       <span class="text-zinc-500">sort:</span>
       {% for opt in ['expectancy', 'win_rate', 'pnl'] %}
-        <a class="px-2 py-1 rounded {{ 'bg-emerald-900' if sort_by == opt else 'hover:bg-zinc-900' }}" href="/wallets?by={{ opt }}&min_closed={{ min_closed }}">{{ opt }}</a>
+        <a class="px-2 py-1 rounded {{ 'bg-emerald-900' if sort_by == opt else 'hover:bg-zinc-900' }}" href="/wallets?by={{ opt }}&min_closed={{ min_closed }}{% if watched_only %}&watched_only=1{% endif %}">{{ opt }}</a>
       {% endfor %}
+      <span class="ml-4 text-zinc-500">·</span>
+      <a class="px-2 py-1 rounded {{ 'bg-amber-900' if watched_only else 'hover:bg-zinc-900' }}" href="/wallets?by={{ sort_by }}&min_closed={{ min_closed }}{% if not watched_only %}&watched_only=1{% endif %}">watched only</a>
       <a class="ml-auto text-zinc-500 hover:text-zinc-100" href="/">← signals</a>
     </nav>
 
@@ -45,6 +48,7 @@
           {% set st = row.stat %}{% set w = row.wallet %}
           <tr class="border-t border-zinc-900 hover:bg-zinc-900/40">
             <td class="px-3 py-2">
+              {% if w and w.is_watched %}<span class="mr-1 text-amber-400" title="watched">●</span>{% endif %}
               <a class="text-sky-400 hover:underline" href="/wallet/{{ st.wallet }}">{{ st.wallet[:6] }}…{{ st.wallet[-4:] }}</a>
             </td>
             <td class="px-3 py-2 text-right">{{ st.closed_positions }}</td>

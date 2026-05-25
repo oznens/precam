@@ -54,7 +54,11 @@ async def index(request: Request, early: int = 0, limit: int = 100):
 
 @app.get("/wallets", response_class=HTMLResponse)
 async def wallets_page(
-    request: Request, by: str = "expectancy", min_closed: int = 5, limit: int = 100
+    request: Request,
+    by: str = "expectancy",
+    min_closed: int = 5,
+    limit: int = 100,
+    watched_only: int = 0,
 ):
     async with SessionLocal() as s:
         res = await s.execute(
@@ -66,7 +70,14 @@ async def wallets_page(
             for w in (await s.execute(select(Wallet))).scalars().all()
         }
         total_wallets = (await s.execute(select(func.count(Wallet.address)))).scalar_one()
+        watched_count = (
+            await s.execute(
+                select(func.count(Wallet.address)).where(Wallet.is_watched == True)  # noqa: E712
+            )
+        ).scalar_one()
 
+    if watched_only:
+        stats = [st for st in stats if (wallets.get(st.wallet) and wallets[st.wallet].is_watched)]
     key = {
         "expectancy": lambda r: r.expectancy,
         "win_rate": lambda r: r.win_rate,
@@ -85,6 +96,8 @@ async def wallets_page(
             "sort_by": by,
             "min_closed": min_closed,
             "total_wallets": total_wallets,
+            "watched_count": watched_count,
+            "watched_only": bool(watched_only),
             "qualified": len(stats),
         },
     )

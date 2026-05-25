@@ -13,7 +13,9 @@ def _fmt_usd(v: float) -> str:
         return f"${v/1_000:.1f}K"
     if v >= 1:
         return f"${v:.2f}"
-    return f"${v:.6f}"
+    if v > 0:
+        return f"${v:.6f}".rstrip("0").rstrip(".")
+    return "$0"
 
 
 def _fmt_age(min_age: float) -> str:

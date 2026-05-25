@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime
 from pathlib import Path
 
 import typer
@@ -12,6 +13,7 @@ from .twitter.scraper import get_api
 from .worker import run_forever, scan_once
 from .workers.pump import listen as pump_listen, rescore_loop, rescore_pending
 from .workers.wallets import discover_from_trending, refresh_all, refresh_wallet
+from .workers.watcher import auto_watch_top, watch_forever, watch_once
 
 app = typer.Typer(no_args_is_help=True, help="precam — Solana meme alpha tracker")
 kol_app = typer.Typer(no_args_is_help=True, help="Manage KOL (key opinion leader) Twitter handles")
@@ -51,6 +53,23 @@ def scan() -> None:
 def worker() -> None:
     """Run the continuous scan loop."""
     _arun(run_forever())
+
+
+@app.command()
+def watcher(
+    once: bool = typer.Option(False, "--once", help="Run a single pass then exit"),
+) -> None:
+    """Real-time loop: poll watched wallets, alert on smart-money buys."""
+
+    async def _run():
+        await init_db()
+        if once:
+            n = await watch_once()
+            typer.echo(f"sent {n} alert(s)")
+        else:
+            await watch_forever()
+
+    _arun(_run())
 
 
 @app.command()
@@ -289,6 +308,72 @@ def wallet_rank(
                 f"{r.win_rate*100:>4.0f}% {r.avg_win_pct:>+6.0f}% {r.avg_loss_pct:>+6.0f}% "
                 f"{r.expectancy:>+6.1f}% {r.total_realized_pnl_usd:>12,.0f}"
             )
+
+    _arun(_run())
+
+
+@wallet_app.command("watch")
+def wallet_watch(address: str) -> None:
+    """Flag a wallet for real-time monitoring (sends Telegram alerts on buys)."""
+
+    async def _run():
+        await init_db()
+        async with SessionLocal() as s:
+            res = await s.execute(select(Wallet).where(Wallet.address == address))
+            w = res.scalar_one_or_none()
+            if w is None:
+                s.add(
+                    Wallet(
+                        address=address,
+                        label="manual",
+                        discovered_via="manual",
+                        is_watched=True,
+                        watched_at=datetime.utcnow(),
+                    )
+                )
+                typer.echo(f"added + watched {address}")
+            else:
+                w.is_watched = True
+                w.watched_at = datetime.utcnow()
+                s.add(w)
+                typer.echo(f"watching {address}")
+            await s.commit()
+
+    _arun(_run())
+
+
+@wallet_app.command("unwatch")
+def wallet_unwatch(address: str) -> None:
+    async def _run():
+        await init_db()
+        async with SessionLocal() as s:
+            res = await s.execute(select(Wallet).where(Wallet.address == address))
+            w = res.scalar_one_or_none()
+            if w:
+                w.is_watched = False
+                s.add(w)
+                await s.commit()
+                typer.echo(f"unwatched {address}")
+            else:
+                typer.echo("(not found)")
+
+    _arun(_run())
+
+
+@wallet_app.command("auto-watch")
+def wallet_auto_watch(
+    top: int = typer.Option(20, help="How many top wallets to promote"),
+    min_closed: int = typer.Option(5, help="Min closed positions to qualify"),
+    min_expectancy: float = typer.Option(5.0, help="Min expectancy % per trade"),
+) -> None:
+    """Promote top-N qualifying wallets (by expectancy) to the watch list."""
+
+    async def _run():
+        await init_db()
+        added, total = await auto_watch_top(
+            top=top, min_closed=min_closed, min_expectancy=min_expectancy
+        )
+        typer.echo(f"newly watched: {added}  |  total watched: {total}")
 
     _arun(_run())
 

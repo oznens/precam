@@ -67,7 +67,18 @@ precam twitter status
 precam wallet discover [--top-pools N] [--pages N] [--min-buys N]
 precam wallet refresh [ADDRESS] [--limit N] [--pages N]
 precam wallet rank [--by expectancy|win_rate|pnl] [--min-closed N]
+precam wallet watch <address>
+precam wallet unwatch <address>
+precam wallet auto-watch [--top N] [--min-closed N] [--min-expectancy N]
 precam wallet list
+
+# Real-time smart-money alerts
+precam watcher [--once]
+
+# Pump.fun new-mint scanner
+precam pump listen                            # ws stream of new mints
+precam pump rescore [--loop] [--interval N] [--batch N]
+precam pump list [--clean-only] [--max-risk N]
 ```
 
 ## How the smart wallet tracker works
@@ -90,12 +101,34 @@ history at `/wallet/<address>`.
 A find is tagged `EARLY` when the pair age is below `EARLY_MAX_AGE_MIN` and
 liquidity is above `MIN_LIQUIDITY_USD` (see `.env`).
 
+## Real-time smart-money flow
+
+```bash
+# 1. discover candidates from trending pools
+precam wallet discover --top-pools 20 --pages 3
+
+# 2. compute expectancy / win-rate for every discovered wallet
+precam wallet refresh
+
+# 3. promote top-N qualifiers (by expectancy) to the watch list
+precam wallet auto-watch --top 20 --min-closed 5 --min-expectancy 5
+
+# 4. continuous watcher: polls every WATCHER_INTERVAL (default 90s),
+#    parses new SWAPs, alerts on BUYS >= WATCHER_MIN_BUY_USD
+precam watcher
+```
+
+Convergence boost: if N watched wallets buy the same mint within
+`WATCHER_CONVERGENCE_WINDOW_MIN` minutes, the Telegram alert flips from
+`🎯 SMART BUY` to `🔥 CONVERGENCE` with the count highlighted — that's
+the strongest signal in the system.
+
 ## Roadmap
 
 - [x] KOL Twitter scanner with CA extraction + Telegram alerts
 - [x] Smart-wallet discovery + expectancy-based leaderboard
-- [ ] Real-time alerts when a top-ranked wallet opens a new position
-- [ ] Pump.fun new-mint scanner with rug heuristics (dev holdings, LP burn)
-- [ ] Backtest harness on stored signals
+- [x] Pump.fun new-mint scanner with rug heuristics
+- [x] Real-time alerts when a top-ranked wallet opens a new position + convergence boost
+- [ ] Backtest harness on stored signals (auto-tune KOL weights from realized hit rate)
 - [ ] Discord webhook output
 - [ ] Paper-trade simulator

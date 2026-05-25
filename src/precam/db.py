@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlmodel import Field, SQLModel
 
@@ -33,6 +34,8 @@ class Wallet(SQLModel, table=True):
     discovered_at: datetime = Field(default_factory=datetime.utcnow)
     last_refreshed_at: Optional[datetime] = None
     is_watched: bool = False
+    watched_at: Optional[datetime] = None
+    last_seen_sig: Optional[str] = None
 
 
 class Trade(SQLModel, table=True):
@@ -128,9 +131,24 @@ engine = create_async_engine(settings.database_url, echo=False, future=True)
 SessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
+_ADDITIVE_MIGRATIONS: list[tuple[str, str, str]] = [
+    ("wallet", "watched_at", "TIMESTAMP"),
+    ("wallet", "last_seen_sig", "VARCHAR"),
+]
+
+
+async def _apply_additive_migrations(conn) -> None:
+    for table, col, typ in _ADDITIVE_MIGRATIONS:
+        res = await conn.execute(text(f"PRAGMA table_info({table})"))
+        cols = {row[1] for row in res.fetchall()}
+        if col not in cols:
+            await conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {typ}"))
+
+
 async def init_db() -> None:
     async with engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)
+        await _apply_additive_migrations(conn)
 
 
 async def session() -> AsyncSession:
