@@ -8,9 +8,19 @@ from loguru import logger
 from sqlalchemy import delete, select
 
 from .config import settings
-from .db import Kol, PumpToken, SessionLocal, Signal, Wallet, WalletStat, init_db
+from .db import (
+    BacktestRun,
+    Kol,
+    PumpToken,
+    SessionLocal,
+    Signal,
+    Wallet,
+    WalletStat,
+    init_db,
+)
 from .twitter.scraper import get_api
 from .worker import run_forever, scan_once
+from .workers.backtest import leaderboard as backtest_leaderboard, run_backtest
 from .workers.pump import listen as pump_listen, rescore_loop, rescore_pending
 from .workers.wallets import discover_from_trending, refresh_all, refresh_wallet
 from .workers.watcher import auto_watch_top, watch_forever, watch_once
@@ -20,10 +30,12 @@ kol_app = typer.Typer(no_args_is_help=True, help="Manage KOL (key opinion leader
 tw_app = typer.Typer(no_args_is_help=True, help="Manage twscrape Twitter accounts")
 wallet_app = typer.Typer(no_args_is_help=True, help="Smart wallet discovery + ranking")
 pump_app = typer.Typer(no_args_is_help=True, help="Pump.fun new-mint scanner + rug scoring")
+backtest_app = typer.Typer(no_args_is_help=True, help="Backtest stored signals against TP/SL strategies")
 app.add_typer(kol_app, name="kol")
 app.add_typer(tw_app, name="twitter")
 app.add_typer(wallet_app, name="wallet")
 app.add_typer(pump_app, name="pump")
+app.add_typer(backtest_app, name="backtest")
 
 
 def _arun(coro):
@@ -453,6 +465,84 @@ def pump_list(
                 f"{r.created_at:%m-%d %H:%M:%S} {(r.symbol or '?'):<10} "
                 f"{r.rug_risk:>5.0f} {r.creator_share*100:>4.1f}% "
                 f"{r.top10_share*100:>5.1f}% {r.holders_count:>4} {r.mint}"
+            )
+
+    _arun(_run())
+
+
+@backtest_app.command("run")
+def backtest_run_cmd(
+    source: str = typer.Argument(..., help="signal | wallet"),
+    name: str = typer.Option(None, help="Run label (auto if omitted)"),
+    tp: float = typer.Option(100.0, help="Take-profit % (e.g. 100 = 2x)"),
+    sl: float = typer.Option(-30.0, help="Stop-loss % (e.g. -30)"),
+    max_hold: int = typer.Option(720, help="Max hold time (minutes)"),
+    limit: int = typer.Option(100, help="How many recent items to simulate"),
+    concurrency: int = typer.Option(3, help="Parallel OHLCV fetches"),
+) -> None:
+    """Run a TP/SL backtest over recent Signals (KOL) or watched-wallet BUY Trades."""
+
+    async def _run():
+        await init_db()
+        n = name or f"{source}_tp{int(tp)}_sl{int(sl)}_h{max_hold}"
+        rid = await run_backtest(
+            name=n, source=source, tp_pct=tp, sl_pct=sl,
+            max_hold_min=max_hold, limit=limit, concurrency=concurrency,
+        )
+        typer.echo(f"run #{rid} stored")
+
+    _arun(_run())
+
+
+@backtest_app.command("runs")
+def backtest_runs_cmd(limit: int = 20) -> None:
+    async def _run():
+        await init_db()
+        async with SessionLocal() as s:
+            res = await s.execute(
+                select(BacktestRun).order_by(BacktestRun.started_at.desc()).limit(limit)
+            )
+            rows = res.scalars().all()
+        if not rows:
+            typer.echo("(no runs)")
+            return
+        typer.echo(
+            f"{'id':>4} {'started':<16} {'name':<30} {'trades':>6} {'win%':>5} "
+            f"{'exp%':>7} {'avg%':>7} {'sum%':>8}"
+        )
+        for r in rows:
+            typer.echo(
+                f"{r.id:>4} {r.started_at:%m-%d %H:%M:%S} {r.name[:30]:<30} "
+                f"{r.total_trades:>6} {r.win_rate*100:>4.0f}% "
+                f"{r.expectancy:>+6.1f}% {r.avg_pnl_pct:>+6.1f}% {r.sum_pnl_pct:>+7.1f}%"
+            )
+
+    _arun(_run())
+
+
+@backtest_app.command("leaderboard")
+def backtest_leaderboard_cmd(
+    run_id: int = typer.Argument(..., help="ID from `precam backtest runs`"),
+    min_trades: int = typer.Option(3, help="Min closed trades to qualify"),
+    limit: int = typer.Option(30, help="Top N rows to print"),
+) -> None:
+    """Per-source-key (KOL handle / wallet address) leaderboard for one run."""
+
+    async def _run():
+        await init_db()
+        rows = await backtest_leaderboard(run_id, min_trades=min_trades)
+        if not rows:
+            typer.echo(f"(no qualifying sources for run {run_id})")
+            return
+        typer.echo(
+            f"{'source_key':<46} {'closed':>6} {'win%':>5} {'avg%':>7} "
+            f"{'med%':>7} {'exp%':>7} {'sum%':>8}"
+        )
+        for r in rows[:limit]:
+            typer.echo(
+                f"{r['source_key'][:46]:<46} {r['closed']:>6} "
+                f"{r['win_rate']*100:>4.0f}% {r['avg_pnl_pct']:>+6.1f}% "
+                f"{r['median_pnl_pct']:>+6.1f}% {r['expectancy']:>+6.1f}% {r['sum_pnl_pct']:>+7.1f}%"
             )
 
     _arun(_run())

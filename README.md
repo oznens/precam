@@ -79,7 +79,30 @@ precam watcher [--once]
 precam pump listen                            # ws stream of new mints
 precam pump rescore [--loop] [--interval N] [--batch N]
 precam pump list [--clean-only] [--max-risk N]
+
+# Backtest stored signals against TP/SL strategies
+precam backtest run <signal|wallet> [--tp 100] [--sl -30] [--max-hold 720] [--limit 100]
+precam backtest runs
+precam backtest leaderboard <run_id> [--min-trades 3]
 ```
+
+## Backtesting
+
+Replays stored Signals (KOL alerts) or watched-wallet BUY Trades against a
+TP / SL / max-hold strategy using free GeckoTerminal OHLCV (5-min bars, up
+to 1000 per request). For each entry:
+
+1. Locate the trading pool (from `dex_url` if known, else GeckoTerminal
+   token→pools lookup, highest-liquidity pool wins).
+2. Fetch 5-min bars from entry time forward.
+3. Walk bars; if a bar's high crosses TP → win at TP price; if low crosses
+   SL → loss at SL price; if both in one bar → SL wins (pessimistic).
+4. Aggregate per `source_key` (KOL handle or wallet address) → win rate,
+   avg/median pnl, expectancy, sum pnl.
+
+Use the leaderboard to identify which KOLs / wallets actually print money
+after fees + slippage, and tune `kol.weight` / `--min-expectancy` in
+`auto-watch` based on real evidence rather than vibes.
 
 ## How the smart wallet tracker works
 
@@ -129,6 +152,7 @@ the strongest signal in the system.
 - [x] Smart-wallet discovery + expectancy-based leaderboard
 - [x] Pump.fun new-mint scanner with rug heuristics
 - [x] Real-time alerts when a top-ranked wallet opens a new position + convergence boost
-- [ ] Backtest harness on stored signals (auto-tune KOL weights from realized hit rate)
+- [x] Backtest harness on stored signals (TP/SL/timeout, per-source leaderboard)
+- [ ] Auto-tune KOL weights & auto-watch thresholds from backtest results
 - [ ] Discord webhook output
 - [ ] Paper-trade simulator

@@ -5,7 +5,19 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import func, select
 
-from .db import Kol, Position, PumpToken, SessionLocal, Signal, Wallet, WalletStat, init_db
+from .db import (
+    BacktestRun,
+    BacktestTrade,
+    Kol,
+    Position,
+    PumpToken,
+    SessionLocal,
+    Signal,
+    Wallet,
+    WalletStat,
+    init_db,
+)
+from .workers.backtest import leaderboard as backtest_leaderboard
 
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 app = FastAPI(title="precam dashboard")
@@ -168,6 +180,45 @@ async def pump_page(
             "clean_only": bool(clean_only),
             "max_risk": max_risk,
         },
+    )
+
+
+@app.get("/backtest", response_class=HTMLResponse)
+async def backtest_page(request: Request, limit: int = 50):
+    async with SessionLocal() as s:
+        runs = list(
+            (
+                await s.execute(
+                    select(BacktestRun).order_by(BacktestRun.started_at.desc()).limit(limit)
+                )
+            ).scalars().all()
+        )
+    return templates.TemplateResponse(
+        request, "backtest_runs.html", {"runs": runs}
+    )
+
+
+@app.get("/backtest/{run_id}", response_class=HTMLResponse)
+async def backtest_run_page(request: Request, run_id: int, min_trades: int = 3):
+    async with SessionLocal() as s:
+        run = (
+            await s.execute(select(BacktestRun).where(BacktestRun.id == run_id))
+        ).scalar_one_or_none()
+        trades = list(
+            (
+                await s.execute(
+                    select(BacktestTrade)
+                    .where(BacktestTrade.run_id == run_id)
+                    .order_by(BacktestTrade.entry_ts.desc())
+                    .limit(200)
+                )
+            ).scalars().all()
+        )
+    lb = await backtest_leaderboard(run_id, min_trades=min_trades)
+    return templates.TemplateResponse(
+        request,
+        "backtest_run.html",
+        {"run": run, "trades": trades, "leaderboard": lb, "min_trades": min_trades},
     )
 
 

@@ -108,6 +108,46 @@ class PumpToken(SQLModel, table=True):
     alerted: bool = False
 
 
+class BacktestRun(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str = Field(index=True)
+    source: str
+    strategy: str
+    tp_pct: float
+    sl_pct: float
+    max_hold_min: int
+    entry_delay_min: int = 0
+    started_at: datetime = Field(default_factory=datetime.utcnow)
+    finished_at: Optional[datetime] = None
+    total_trades: int = 0
+    closed_trades: int = 0
+    wins: int = 0
+    losses: int = 0
+    win_rate: float = 0.0
+    avg_pnl_pct: float = 0.0
+    median_pnl_pct: float = 0.0
+    expectancy: float = 0.0
+    sum_pnl_pct: float = 0.0
+
+
+class BacktestTrade(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    run_id: int = Field(index=True)
+    source_key: str = Field(index=True)
+    source_ref: str = Field(index=True)
+    mint: str = Field(index=True)
+    symbol: str = ""
+    entry_ts: datetime
+    entry_price: float
+    exit_ts: Optional[datetime] = None
+    exit_price: float = 0.0
+    exit_reason: str = ""
+    pnl_pct: float = 0.0
+    hold_minutes: float = 0.0
+    max_favourable_pct: float = 0.0
+    max_adverse_pct: float = 0.0
+
+
 class Signal(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     mint: str = Field(index=True)

@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>precam · backtest #{{ run.id if run else '?' }}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-zinc-950 text-zinc-100 font-mono">
+  <div class="max-w-7xl mx-auto p-6">
+    <header class="mb-6">
+      <a href="/backtest" class="text-zinc-500 hover:text-zinc-100 text-sm">← runs</a>
+      {% if run %}
+        <h1 class="text-xl font-bold tracking-tight mt-2">{{ run.name }} <span class="text-zinc-500">· #{{ run.id }}</span></h1>
+        <div class="text-zinc-400 text-sm mt-1">
+          {{ run.source }} · TP {{ '%+.0f'|format(run.tp_pct) }}% / SL {{ '%+.0f'|format(run.sl_pct) }}% / max-hold {{ run.max_hold_min }}m
+        </div>
+      {% endif %}
+    </header>
+
+    {% if run %}
+    <section class="grid grid-cols-2 md:grid-cols-6 gap-3 mb-6">
+      <div class="bg-zinc-900 border border-zinc-800 rounded p-3"><div class="text-xs text-zinc-500">trades</div><div class="text-xl">{{ run.closed_trades }}/{{ run.total_trades }}</div></div>
+      <div class="bg-zinc-900 border border-zinc-800 rounded p-3"><div class="text-xs text-zinc-500">win rate</div><div class="text-xl {{ 'text-emerald-400' if run.win_rate >= 0.5 else '' }}">{{ '%.0f'|format(run.win_rate * 100) }}%</div></div>
+      <div class="bg-zinc-900 border border-zinc-800 rounded p-3"><div class="text-xs text-zinc-500">avg pnl</div><div class="text-xl {{ 'text-emerald-400' if run.avg_pnl_pct > 0 else 'text-rose-400' }}">{{ '%+.1f'|format(run.avg_pnl_pct) }}%</div></div>
+      <div class="bg-zinc-900 border border-zinc-800 rounded p-3"><div class="text-xs text-zinc-500">median pnl</div><div class="text-xl">{{ '%+.1f'|format(run.median_pnl_pct) }}%</div></div>
+      <div class="bg-zinc-900 border border-zinc-800 rounded p-3"><div class="text-xs text-zinc-500">expectancy</div><div class="text-xl {{ 'text-emerald-400' if run.expectancy > 0 else 'text-rose-400' }}">{{ '%+.1f'|format(run.expectancy) }}%</div></div>
+      <div class="bg-zinc-900 border border-zinc-800 rounded p-3"><div class="text-xs text-zinc-500">sum pnl</div><div class="text-xl {{ 'text-emerald-400' if run.sum_pnl_pct > 0 else 'text-rose-400' }}">{{ '%+.0f'|format(run.sum_pnl_pct) }}%</div></div>
+    </section>
+    {% endif %}
+
+    <h2 class="text-zinc-400 text-sm uppercase tracking-widest mb-2">leaderboard (≥{{ min_trades }} closed)</h2>
+    <div class="overflow-x-auto border border-zinc-800 rounded mb-8">
+      <table class="w-full text-sm">
+        <thead class="bg-zinc-900 text-zinc-400 text-left">
+          <tr>
+            <th class="px-3 py-2">source</th>
+            <th class="px-3 py-2 text-right">closed</th>
+            <th class="px-3 py-2 text-right">wins</th>
+            <th class="px-3 py-2 text-right">win%</th>
+            <th class="px-3 py-2 text-right">avg%</th>
+            <th class="px-3 py-2 text-right">med%</th>
+            <th class="px-3 py-2 text-right">expectancy</th>
+            <th class="px-3 py-2 text-right">sum%</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for r in leaderboard %}
+          <tr class="border-t border-zinc-900">
+            <td class="px-3 py-2 text-sky-400">{{ r.source_key[:46] }}</td>
+            <td class="px-3 py-2 text-right">{{ r.closed }}</td>
+            <td class="px-3 py-2 text-right">{{ r.wins }}</td>
+            <td class="px-3 py-2 text-right {{ 'text-emerald-400' if r.win_rate >= 0.5 else '' }}">{{ '%.0f'|format(r.win_rate * 100) }}%</td>
+            <td class="px-3 py-2 text-right {{ 'text-emerald-400' if r.avg_pnl_pct > 0 else 'text-rose-400' }}">{{ '%+.1f'|format(r.avg_pnl_pct) }}%</td>
+            <td class="px-3 py-2 text-right">{{ '%+.1f'|format(r.median_pnl_pct) }}%</td>
+            <td class="px-3 py-2 text-right font-bold {{ 'text-emerald-400' if r.expectancy > 0 else 'text-rose-400' }}">{{ '%+.1f'|format(r.expectancy) }}%</td>
+            <td class="px-3 py-2 text-right {{ 'text-emerald-400' if r.sum_pnl_pct > 0 else 'text-rose-400' }}">{{ '%+.0f'|format(r.sum_pnl_pct) }}%</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="8" class="px-3 py-8 text-center text-zinc-500">no qualifying sources</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <h2 class="text-zinc-400 text-sm uppercase tracking-widest mb-2">all trades (latest 200)</h2>
+    <div class="overflow-x-auto border border-zinc-800 rounded">
+      <table class="w-full text-sm">
+        <thead class="bg-zinc-900 text-zinc-400 text-left">
+          <tr>
+            <th class="px-3 py-2">entry</th>
+            <th class="px-3 py-2">source</th>
+            <th class="px-3 py-2">mint</th>
+            <th class="px-3 py-2">exit</th>
+            <th class="px-3 py-2 text-right">held</th>
+            <th class="px-3 py-2 text-right">pnl</th>
+            <th class="px-3 py-2 text-right">max+</th>
+            <th class="px-3 py-2 text-right">max−</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for t in trades %}
+          <tr class="border-t border-zinc-900">
+            <td class="px-3 py-2 text-zinc-400">{{ t.entry_ts.strftime('%m-%d %H:%M') }}</td>
+            <td class="px-3 py-2 text-sky-400 text-xs">{{ t.source_key[:18] }}</td>
+            <td class="px-3 py-2 text-xs"><a class="text-sky-400 hover:underline" href="https://dexscreener.com/solana/{{ t.mint }}" target="_blank">{{ t.symbol or t.mint[:6] }}</a></td>
+            <td class="px-3 py-2">
+              {% set color = 'text-emerald-400' if t.exit_reason == 'tp' else ('text-rose-400' if t.exit_reason == 'sl' else 'text-zinc-400') %}
+              <span class="{{ color }}">{{ t.exit_reason }}</span>
+            </td>
+            <td class="px-3 py-2 text-right text-zinc-400">{{ '%.0f'|format(t.hold_minutes) }}m</td>
+            <td class="px-3 py-2 text-right font-bold {{ 'text-emerald-400' if t.pnl_pct > 0 else 'text-rose-400' }}">{{ '%+.1f'|format(t.pnl_pct) }}%</td>
+            <td class="px-3 py-2 text-right text-emerald-400/70">{{ '%+.0f'|format(t.max_favourable_pct) }}%</td>
+            <td class="px-3 py-2 text-right text-rose-400/70">{{ '%+.0f'|format(t.max_adverse_pct) }}%</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="8" class="px-3 py-8 text-center text-zinc-500">no trades</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</body>
+</html>

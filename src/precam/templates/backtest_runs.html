@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>precam · backtest</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-zinc-950 text-zinc-100 font-mono">
+  <div class="max-w-6xl mx-auto p-6">
+    <header class="flex items-baseline justify-between mb-6">
+      <h1 class="text-2xl font-bold tracking-tight">
+        <a href="/" class="text-zinc-500 hover:text-zinc-100">precam</a> · backtest runs
+      </h1>
+      <div class="text-sm text-zinc-400">
+        <a class="text-zinc-500 hover:text-zinc-100" href="/">signals</a> ·
+        <a class="text-zinc-500 hover:text-zinc-100" href="/wallets">wallets</a> ·
+        <a class="text-zinc-500 hover:text-zinc-100" href="/pump">pump</a>
+      </div>
+    </header>
+
+    <div class="bg-zinc-900 border border-zinc-800 rounded p-4 mb-4 text-sm text-zinc-400">
+      Run a backtest from the CLI, e.g.:
+      <pre class="mt-2 text-zinc-300">precam backtest run signal --tp 100 --sl -30 --max-hold 720 --limit 100
+precam backtest run wallet --tp 200 --sl -40 --max-hold 1440</pre>
+    </div>
+
+    <div class="overflow-x-auto border border-zinc-800 rounded">
+      <table class="w-full text-sm">
+        <thead class="bg-zinc-900 text-zinc-400 text-left">
+          <tr>
+            <th class="px-3 py-2">#</th>
+            <th class="px-3 py-2">when</th>
+            <th class="px-3 py-2">name</th>
+            <th class="px-3 py-2">strategy</th>
+            <th class="px-3 py-2 text-right">trades</th>
+            <th class="px-3 py-2 text-right">win%</th>
+            <th class="px-3 py-2 text-right">avg%</th>
+            <th class="px-3 py-2 text-right">med%</th>
+            <th class="px-3 py-2 text-right">exp%</th>
+            <th class="px-3 py-2 text-right">sum%</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for r in runs %}
+          <tr class="border-t border-zinc-900 hover:bg-zinc-900/40">
+            <td class="px-3 py-2"><a class="text-sky-400 hover:underline" href="/backtest/{{ r.id }}">#{{ r.id }}</a></td>
+            <td class="px-3 py-2 text-zinc-400">{{ r.started_at.strftime('%m-%d %H:%M') }}</td>
+            <td class="px-3 py-2 truncate max-w-xs">{{ r.name }}</td>
+            <td class="px-3 py-2 text-zinc-400 text-xs">
+              {{ r.source }} · tp{{ '%+d'|format(r.tp_pct) }} sl{{ '%+d'|format(r.sl_pct) }} hold{{ r.max_hold_min }}m
+            </td>
+            <td class="px-3 py-2 text-right">{{ r.closed_trades }}/{{ r.total_trades }}</td>
+            <td class="px-3 py-2 text-right {{ 'text-emerald-400' if r.win_rate >= 0.5 else 'text-zinc-300' }}">{{ '%.0f'|format(r.win_rate * 100) }}%</td>
+            <td class="px-3 py-2 text-right {{ 'text-emerald-400' if r.avg_pnl_pct > 0 else 'text-rose-400' }}">{{ '%+.1f'|format(r.avg_pnl_pct) }}%</td>
+            <td class="px-3 py-2 text-right">{{ '%+.1f'|format(r.median_pnl_pct) }}%</td>
+            <td class="px-3 py-2 text-right font-bold {{ 'text-emerald-400' if r.expectancy > 0 else 'text-rose-400' }}">{{ '%+.1f'|format(r.expectancy) }}%</td>
+            <td class="px-3 py-2 text-right {{ 'text-emerald-400' if r.sum_pnl_pct > 0 else 'text-rose-400' }}">{{ '%+.0f'|format(r.sum_pnl_pct) }}%</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="10" class="px-3 py-8 text-center text-zinc-500">no runs yet</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</body>
+</html>
