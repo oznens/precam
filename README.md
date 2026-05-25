@@ -84,7 +84,40 @@ precam pump list [--clean-only] [--max-risk N]
 precam backtest run <signal|wallet> [--tp 100] [--sl -30] [--max-hold 720] [--limit 100]
 precam backtest runs
 precam backtest leaderboard <run_id> [--min-trades 3]
+
+# Auto-tune from backtest results (always dry-run by default; pass --apply to commit)
+precam autotune kol <run_id> [--alpha 0.5] [--min-closed 5] [--apply]
+precam autotune prune-watch <run_id> [--min-expectancy 5] [--apply]
 ```
+
+## Auto-tune (closing the loop)
+
+After a backtest, let the system update its own configuration:
+
+```bash
+# 1. backtest the last 200 KOL signals
+precam backtest run signal --tp 100 --sl -30 --max-hold 720 --limit 200
+#    -> run #N
+
+# 2. preview KOL weight changes (dry-run by default)
+precam autotune kol N
+#    -> table of old → new weights per KOL
+
+# 3. commit if it looks right
+precam autotune kol N --apply
+
+# 4. same loop for the smart-money watch list
+precam backtest run wallet --tp 200 --sl -40 --max-hold 1440 --limit 200
+precam autotune prune-watch <new_run_id> --apply
+```
+
+Smoothing keeps the system stable: with `--alpha 0.5` (default), each tune
+moves the weight halfway from the current value to the suggested bucket
+(`exp>=+50%`→3.0, +20-50%→2.0, +5-20%→1.0, 0-5%→0.5, <0→0.1). Run after each
+backtest; weights drift toward "what actually printed money" instead of vibes.
+
+Safety: `prune-watch` will never unwatch more than `--max-unwatch-fraction`
+(default 0.5) of the current list in one pass — worst expectancy goes first.
 
 ## Backtesting
 
@@ -153,6 +186,6 @@ the strongest signal in the system.
 - [x] Pump.fun new-mint scanner with rug heuristics
 - [x] Real-time alerts when a top-ranked wallet opens a new position + convergence boost
 - [x] Backtest harness on stored signals (TP/SL/timeout, per-source leaderboard)
-- [ ] Auto-tune KOL weights & auto-watch thresholds from backtest results
+- [x] Auto-tune KOL weights & prune watch list from backtest results
 - [ ] Discord webhook output
 - [ ] Paper-trade simulator

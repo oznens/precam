@@ -20,6 +20,7 @@ from .db import (
 )
 from .twitter.scraper import get_api
 from .worker import run_forever, scan_once
+from .workers.autotune import autotune_kol_weights, prune_watchlist
 from .workers.backtest import leaderboard as backtest_leaderboard, run_backtest
 from .workers.pump import listen as pump_listen, rescore_loop, rescore_pending
 from .workers.wallets import discover_from_trending, refresh_all, refresh_wallet
@@ -31,11 +32,13 @@ tw_app = typer.Typer(no_args_is_help=True, help="Manage twscrape Twitter account
 wallet_app = typer.Typer(no_args_is_help=True, help="Smart wallet discovery + ranking")
 pump_app = typer.Typer(no_args_is_help=True, help="Pump.fun new-mint scanner + rug scoring")
 backtest_app = typer.Typer(no_args_is_help=True, help="Backtest stored signals against TP/SL strategies")
+autotune_app = typer.Typer(no_args_is_help=True, help="Auto-tune KOL weights + prune watch list from backtest results")
 app.add_typer(kol_app, name="kol")
 app.add_typer(tw_app, name="twitter")
 app.add_typer(wallet_app, name="wallet")
 app.add_typer(pump_app, name="pump")
 app.add_typer(backtest_app, name="backtest")
+app.add_typer(autotune_app, name="autotune")
 
 
 def _arun(coro):
@@ -544,6 +547,81 @@ def backtest_leaderboard_cmd(
                 f"{r['win_rate']*100:>4.0f}% {r['avg_pnl_pct']:>+6.1f}% "
                 f"{r['median_pnl_pct']:>+6.1f}% {r['expectancy']:>+6.1f}% {r['sum_pnl_pct']:>+7.1f}%"
             )
+
+    _arun(_run())
+
+
+@autotune_app.command("kol")
+def autotune_kol_cmd(
+    run_id: int = typer.Argument(..., help="Backtest run id (precam backtest runs)"),
+    alpha: float = typer.Option(0.5, help="Smoothing 0-1 (0=no change, 1=replace)"),
+    min_closed: int = typer.Option(5, help="Min closed trades for a KOL to qualify"),
+    apply: bool = typer.Option(False, "--apply", help="Actually write changes (default: dry-run)"),
+) -> None:
+    """Re-weight KOLs from a backtest's leaderboard. Prints diff; --apply commits."""
+
+    async def _run():
+        await init_db()
+        changes = await autotune_kol_weights(
+            run_id, alpha=alpha, min_closed=min_closed, dry_run=not apply
+        )
+        if not changes:
+            typer.echo("(no changes)")
+            return
+        typer.echo(
+            f"{'handle':<24} {'closed':>6} {'exp%':>7} {'sugg':>6} {'old':>6} → {'new':>6} {'action':<8}"
+        )
+        for c in changes:
+            arrow = "→"
+            if c.action == "raise":
+                color_open, color_close = "\033[32m", "\033[0m"
+            elif c.action == "lower":
+                color_open, color_close = "\033[31m", "\033[0m"
+            else:
+                color_open, color_close = "", ""
+            typer.echo(
+                f"{c.handle[:24]:<24} {c.closed:>6} {c.expectancy_pct:>+6.1f}% "
+                f"{c.suggested:>6.2f} {c.old_weight:>6.2f} {arrow} "
+                f"{color_open}{c.new_weight:>6.2f}{color_close} {c.action:<8}"
+            )
+        if not apply:
+            typer.echo("\n(dry-run — re-run with --apply to commit)")
+
+    _arun(_run())
+
+
+@autotune_app.command("prune-watch")
+def autotune_prune_watch_cmd(
+    run_id: int = typer.Argument(..., help="Backtest run id (precam backtest runs)"),
+    min_expectancy: float = typer.Option(5.0, help="Unwatch wallets with exp% below this"),
+    min_closed: int = typer.Option(5, help="Min closed trades to make a judgment"),
+    max_unwatch_fraction: float = typer.Option(0.5, help="Safety: cap % of list to unwatch"),
+    apply: bool = typer.Option(False, "--apply", help="Actually write changes"),
+) -> None:
+    """Unwatch low-expectancy wallets from the watch list (with a safety cap)."""
+
+    async def _run():
+        await init_db()
+        changes = await prune_watchlist(
+            run_id,
+            min_expectancy=min_expectancy,
+            min_closed=min_closed,
+            max_unwatch_fraction=max_unwatch_fraction,
+            dry_run=not apply,
+        )
+        if not changes:
+            typer.echo("(no watched wallets matched this run)")
+            return
+        typer.echo(
+            f"{'wallet':<46} {'closed':>6} {'exp%':>7} {'action':<8} {'label'}"
+        )
+        for c in changes:
+            typer.echo(
+                f"{c.address[:46]:<46} {c.closed:>6} {c.expectancy_pct:>+6.1f}% "
+                f"{c.action:<8} {c.label[:40]}"
+            )
+        if not apply:
+            typer.echo("\n(dry-run — re-run with --apply to commit)")
 
     _arun(_run())
 
