@@ -5,7 +5,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import func, select
 
-from .db import Kol, Position, SessionLocal, Signal, Wallet, WalletStat, init_db
+from .db import Kol, Position, PumpToken, SessionLocal, Signal, Wallet, WalletStat, init_db
 
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 app = FastAPI(title="precam dashboard")
@@ -114,6 +114,47 @@ async def wallet_detail(request: Request, address: str):
         request,
         "wallet_detail.html",
         {"wallet": wallet, "stat": stat, "positions": positions, "address": address},
+    )
+
+
+@app.get("/pump", response_class=HTMLResponse)
+async def pump_page(
+    request: Request,
+    clean_only: int = 0,
+    max_risk: float = 100.0,
+    limit: int = 100,
+):
+    async with SessionLocal() as s:
+        q = select(PumpToken).order_by(PumpToken.created_at.desc()).limit(limit * 3)
+        res = await s.execute(q)
+        tokens = list(res.scalars().all())
+        total = (await s.execute(select(func.count(PumpToken.mint)))).scalar_one()
+        clean_count = (
+            await s.execute(
+                select(func.count(PumpToken.mint)).where(PumpToken.is_clean == True)  # noqa: E712
+            )
+        ).scalar_one()
+        scored_count = (
+            await s.execute(
+                select(func.count(PumpToken.mint)).where(PumpToken.last_checked_at.is_not(None))
+            )
+        ).scalar_one()
+
+    if clean_only:
+        tokens = [t for t in tokens if t.is_clean]
+    tokens = [t for t in tokens if t.rug_risk <= max_risk][:limit]
+
+    return templates.TemplateResponse(
+        request,
+        "pump.html",
+        {
+            "tokens": tokens,
+            "total": total,
+            "clean_count": clean_count,
+            "scored_count": scored_count,
+            "clean_only": bool(clean_only),
+            "max_risk": max_risk,
+        },
     )
 
 

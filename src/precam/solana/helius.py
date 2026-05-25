@@ -37,6 +37,39 @@ class HeliusClient:
         except Exception:
             return []
 
+    async def get_mint_info(self, mint: str) -> dict[str, Any] | None:
+        """Parsed SPL mint account: supply, decimals, mintAuthority, freezeAuthority."""
+        try:
+            res = await self._rpc(
+                "getAccountInfo", [mint, {"encoding": "jsonParsed"}]
+            )
+        except Exception:
+            return None
+        if not res or not res.get("value"):
+            return None
+        parsed = (((res["value"].get("data") or {}).get("parsed")) or {}).get("info") or {}
+        return parsed or None
+
+    async def get_token_accounts_by_mint(self, mint: str, limit: int = 1000) -> int:
+        """Approximate holders count via getProgramAccounts on token program."""
+        try:
+            res = await self._rpc(
+                "getProgramAccounts",
+                [
+                    "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+                    {
+                        "encoding": "jsonParsed",
+                        "filters": [
+                            {"dataSize": 165},
+                            {"memcmp": {"offset": 0, "bytes": mint}},
+                        ],
+                    },
+                ],
+            )
+        except Exception:
+            return 0
+        return len(res or [])
+
     async def get_asset(self, mint: str) -> dict[str, Any] | None:
         """DAS getAsset — works only with Helius key (preferred metadata source)."""
         if not settings.helius_api_key:

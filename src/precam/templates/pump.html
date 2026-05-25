@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>precam · pump</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <meta http-equiv="refresh" content="30" />
+</head>
+<body class="bg-zinc-950 text-zinc-100 font-mono">
+  <div class="max-w-7xl mx-auto p-6">
+    <header class="flex items-baseline justify-between mb-6">
+      <h1 class="text-2xl font-bold tracking-tight">
+        <a href="/" class="text-zinc-500 hover:text-zinc-100">precam</a> · pump.fun new mints
+      </h1>
+      <div class="text-sm text-zinc-400">
+        seen: <span class="text-zinc-100">{{ total }}</span> ·
+        scored: <span class="text-zinc-100">{{ scored_count }}</span> ·
+        clean: <span class="text-emerald-400">{{ clean_count }}</span>
+      </div>
+    </header>
+
+    <nav class="mb-4 text-sm flex gap-2 items-center">
+      <a class="px-2 py-1 rounded {{ 'bg-zinc-800' if not clean_only else 'hover:bg-zinc-900' }}" href="/pump">all</a>
+      <a class="px-2 py-1 rounded {{ 'bg-emerald-900' if clean_only else 'hover:bg-zinc-900' }}" href="/pump?clean_only=1">clean only</a>
+      <a class="px-2 py-1 rounded hover:bg-zinc-900" href="/pump?max_risk=30">risk ≤ 30</a>
+      <a class="ml-auto px-2 py-1 rounded hover:bg-zinc-900" href="/">signals</a>
+      <a class="px-2 py-1 rounded hover:bg-zinc-900" href="/wallets">wallets</a>
+    </nav>
+
+    <div class="overflow-x-auto border border-zinc-800 rounded">
+      <table class="w-full text-sm">
+        <thead class="bg-zinc-900 text-zinc-400 text-left">
+          <tr>
+            <th class="px-3 py-2">created</th>
+            <th class="px-3 py-2">name / sym</th>
+            <th class="px-3 py-2 text-right">risk</th>
+            <th class="px-3 py-2 text-right">creator%</th>
+            <th class="px-3 py-2 text-right">top10%</th>
+            <th class="px-3 py-2 text-right">holders</th>
+            <th class="px-3 py-2 text-center">mint</th>
+            <th class="px-3 py-2 text-center">freeze</th>
+            <th class="px-3 py-2 text-right">init buy</th>
+            <th class="px-3 py-2">links</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for t in tokens %}
+          <tr class="border-t border-zinc-900 {{ 'bg-emerald-950/40' if t.is_clean else '' }}">
+            <td class="px-3 py-2 text-zinc-400 whitespace-nowrap">{{ t.created_at.strftime('%m-%d %H:%M:%S') }}</td>
+            <td class="px-3 py-2">
+              <div class="font-semibold">${{ (t.symbol or '?').lstrip('$') }}</div>
+              <div class="text-zinc-500 text-xs truncate max-w-[200px]">{{ t.name }}</div>
+            </td>
+            <td class="px-3 py-2 text-right font-bold
+              {% if t.last_checked_at is none %}text-zinc-500
+              {% elif t.rug_risk < 30 %}text-emerald-400
+              {% elif t.rug_risk < 60 %}text-amber-400
+              {% else %}text-rose-400{% endif %}">
+              {% if t.last_checked_at %}{{ '%.0f'|format(t.rug_risk) }}{% else %}—{% endif %}
+            </td>
+            <td class="px-3 py-2 text-right {{ 'text-rose-400' if t.creator_share > 0.05 else 'text-zinc-300' }}">
+              {{ '%.1f'|format(t.creator_share * 100) }}%
+            </td>
+            <td class="px-3 py-2 text-right {{ 'text-rose-400' if t.top10_share > 0.5 else 'text-zinc-300' }}">
+              {{ '%.1f'|format(t.top10_share * 100) }}%
+            </td>
+            <td class="px-3 py-2 text-right">{{ t.holders_count or '—' }}</td>
+            <td class="px-3 py-2 text-center">{{ '✅' if t.mint_auth_revoked else '❌' }}</td>
+            <td class="px-3 py-2 text-center">{{ '✅' if t.freeze_auth_revoked else '❌' }}</td>
+            <td class="px-3 py-2 text-right text-zinc-400">{{ '%.2f'|format(t.initial_buy_sol) }}</td>
+            <td class="px-3 py-2 text-xs">
+              <a class="text-sky-400 hover:underline" href="https://pump.fun/coin/{{ t.mint }}" target="_blank">pump</a> ·
+              <a class="text-sky-400 hover:underline" href="https://gmgn.ai/sol/token/{{ t.mint }}" target="_blank">gmgn</a>
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="10" class="px-3 py-8 text-center text-zinc-500">
+            no pump tokens yet — run <code>precam pump listen</code>
+          </td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</body>
+</html>

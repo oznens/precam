@@ -19,6 +19,7 @@ dependencies = [
     "loguru>=0.7",
     "base58>=2.1",
     "python-dateutil>=2.9",
+    "websockets>=13.0",
 ]
 
 [project.scripts]

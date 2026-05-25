@@ -7,18 +7,21 @@ from loguru import logger
 from sqlalchemy import delete, select
 
 from .config import settings
-from .db import Kol, SessionLocal, Signal, Wallet, WalletStat, init_db
+from .db import Kol, PumpToken, SessionLocal, Signal, Wallet, WalletStat, init_db
 from .twitter.scraper import get_api
 from .worker import run_forever, scan_once
+from .workers.pump import listen as pump_listen, rescore_loop, rescore_pending
 from .workers.wallets import discover_from_trending, refresh_all, refresh_wallet
 
 app = typer.Typer(no_args_is_help=True, help="precam — Solana meme alpha tracker")
 kol_app = typer.Typer(no_args_is_help=True, help="Manage KOL (key opinion leader) Twitter handles")
 tw_app = typer.Typer(no_args_is_help=True, help="Manage twscrape Twitter accounts")
 wallet_app = typer.Typer(no_args_is_help=True, help="Smart wallet discovery + ranking")
+pump_app = typer.Typer(no_args_is_help=True, help="Pump.fun new-mint scanner + rug scoring")
 app.add_typer(kol_app, name="kol")
 app.add_typer(tw_app, name="twitter")
 app.add_typer(wallet_app, name="wallet")
+app.add_typer(pump_app, name="pump")
 
 
 def _arun(coro):
@@ -303,6 +306,69 @@ def wallet_list(limit: int = 30) -> None:
         for w in ws:
             last = w.last_refreshed_at.isoformat() if w.last_refreshed_at else "-"
             typer.echo(f"{w.address}  via={w.discovered_via:<10} last={last}  {w.label[:60]}")
+
+    _arun(_run())
+
+
+@pump_app.command("listen")
+def pump_listen_cmd() -> None:
+    """Subscribe to PumpPortal websocket and persist new tokens forever."""
+
+    async def _run():
+        await init_db()
+        await pump_listen()
+
+    _arun(_run())
+
+
+@pump_app.command("rescore")
+def pump_rescore_cmd(
+    batch: int = typer.Option(25, help="Number of tokens to (re)score in one pass"),
+    loop: bool = typer.Option(False, help="Run forever every --interval seconds"),
+    interval: int = typer.Option(60, help="Sleep between passes when --loop"),
+) -> None:
+    """Compute rug heuristics for unscored / stalest pump tokens, alert on clean ones."""
+
+    async def _run():
+        await init_db()
+        if loop:
+            await rescore_loop(interval=interval)
+        else:
+            n = await rescore_pending(batch=batch)
+            typer.echo(f"alerted {n}")
+
+    _arun(_run())
+
+
+@pump_app.command("list")
+def pump_list(
+    limit: int = 30,
+    clean_only: bool = typer.Option(False, "--clean-only", help="Only is_clean tokens"),
+    max_risk: float = typer.Option(100.0, help="Filter rug_risk <= this"),
+) -> None:
+    async def _run():
+        await init_db()
+        async with SessionLocal() as s:
+            q = select(PumpToken).order_by(PumpToken.created_at.desc()).limit(limit)
+            if clean_only:
+                q = (
+                    select(PumpToken)
+                    .where(PumpToken.is_clean == True)  # noqa: E712
+                    .order_by(PumpToken.created_at.desc())
+                    .limit(limit)
+                )
+            res = await s.execute(q)
+            rows = [r for r in res.scalars().all() if r.rug_risk <= max_risk]
+        if not rows:
+            typer.echo("(no pump tokens)")
+            return
+        typer.echo(f"{'created':<16} {'sym':<10} {'risk':>5} {'crt%':>5} {'top10%':>6} {'hld':>4} {'mint'}")
+        for r in rows:
+            typer.echo(
+                f"{r.created_at:%m-%d %H:%M:%S} {(r.symbol or '?'):<10} "
+                f"{r.rug_risk:>5.0f} {r.creator_share*100:>4.1f}% "
+                f"{r.top10_share*100:>5.1f}% {r.holders_count:>4} {r.mint}"
+            )
 
     _arun(_run())
 

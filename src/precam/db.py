@@ -79,6 +79,32 @@ class WalletStat(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 
+class PumpToken(SQLModel, table=True):
+    mint: str = Field(primary_key=True)
+    name: str = ""
+    symbol: str = ""
+    uri: str = ""
+    creator: str = Field(index=True, default="")
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    create_sig: str = ""
+    initial_buy_sol: float = 0.0
+    v_sol_in_bc: float = 0.0
+    v_tokens_in_bc: float = 0.0
+
+    market_cap_sol: float = 0.0
+    bonding_progress: float = 0.0
+    creator_share: float = 0.0
+    top10_share: float = 0.0
+    holders_count: int = 0
+    mint_auth_revoked: bool = False
+    freeze_auth_revoked: bool = False
+
+    rug_risk: float = 0.0
+    is_clean: bool = False
+    last_checked_at: Optional[datetime] = None
+    alerted: bool = False
+
+
 class Signal(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     mint: str = Field(index=True)
