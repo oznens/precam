@@ -24,6 +24,16 @@ class Settings(BaseSettings):
     watcher_min_buy_usd: float = 50.0
     watcher_convergence_window_min: int = 60
 
+    paper_starting_balance: float = 1000.0
+    paper_position_size_usd: float = 50.0
+    paper_max_concurrent: int = 10
+    paper_slippage_pct: float = 1.0
+    paper_fee_usd: float = 0.50
+    paper_tp_pct: float = 100.0
+    paper_sl_pct: float = -30.0
+    paper_max_hold_min: int = 720
+    paper_interval: int = 60
+
     dashboard_host: str = "0.0.0.0"
     dashboard_port: int = 8000
 

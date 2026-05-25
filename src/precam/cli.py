@@ -11,6 +11,8 @@ from .config import settings
 from .db import (
     BacktestRun,
     Kol,
+    PaperPortfolio,
+    PaperPosition,
     PumpToken,
     SessionLocal,
     Signal,
@@ -22,6 +24,13 @@ from .twitter.scraper import get_api
 from .worker import run_forever, scan_once
 from .workers.autotune import autotune_kol_weights, prune_watchlist
 from .workers.backtest import leaderboard as backtest_leaderboard, run_backtest
+from .workers.paper import (
+    get_or_init_portfolio,
+    manage_positions,
+    open_new_positions,
+    paper_loop,
+    reset_portfolio,
+)
 from .workers.pump import listen as pump_listen, rescore_loop, rescore_pending
 from .workers.wallets import discover_from_trending, refresh_all, refresh_wallet
 from .workers.watcher import auto_watch_top, watch_forever, watch_once
@@ -33,12 +42,14 @@ wallet_app = typer.Typer(no_args_is_help=True, help="Smart wallet discovery + ra
 pump_app = typer.Typer(no_args_is_help=True, help="Pump.fun new-mint scanner + rug scoring")
 backtest_app = typer.Typer(no_args_is_help=True, help="Backtest stored signals against TP/SL strategies")
 autotune_app = typer.Typer(no_args_is_help=True, help="Auto-tune KOL weights + prune watch list from backtest results")
+paper_app = typer.Typer(no_args_is_help=True, help="Paper-trade simulator: virtual portfolio against live signals")
 app.add_typer(kol_app, name="kol")
 app.add_typer(tw_app, name="twitter")
 app.add_typer(wallet_app, name="wallet")
 app.add_typer(pump_app, name="pump")
 app.add_typer(backtest_app, name="backtest")
 app.add_typer(autotune_app, name="autotune")
+app.add_typer(paper_app, name="paper")
 
 
 def _arun(coro):
@@ -622,6 +633,205 @@ def autotune_prune_watch_cmd(
             )
         if not apply:
             typer.echo("\n(dry-run — re-run with --apply to commit)")
+
+    _arun(_run())
+
+
+@paper_app.command("status")
+def paper_status_cmd() -> None:
+    """Print the active portfolio's summary."""
+
+    async def _run():
+        await init_db()
+        p = await get_or_init_portfolio()
+        async with SessionLocal() as s:
+            opens = list(
+                (
+                    await s.execute(
+                        select(PaperPosition).where(
+                            PaperPosition.portfolio_id == p.id,
+                            PaperPosition.status == "open",
+                        )
+                    )
+                ).scalars().all()
+            )
+        open_value = sum(o.last_price * o.entry_tokens for o in opens if o.last_price > 0)
+        total_equity = p.current_cash_usd + open_value
+        roi = ((total_equity / p.starting_balance_usd) - 1) * 100 if p.starting_balance_usd > 0 else 0
+        typer.echo(f"portfolio #{p.id}  starting ${p.starting_balance_usd:.2f}")
+        typer.echo(f"  cash               ${p.current_cash_usd:>10,.2f}")
+        typer.echo(f"  open positions     {len(opens):>10d}  (live value ${open_value:,.2f})")
+        typer.echo(f"  total equity       ${total_equity:>10,.2f}  ({roi:+.1f}% ROI)")
+        typer.echo(f"  realized pnl       ${p.total_realized_pnl_usd:>+10,.2f}")
+        typer.echo(f"  fees paid          ${p.total_fees_usd:>10,.2f}")
+        typer.echo(f"  slippage paid      ${p.total_slippage_usd:>10,.2f}")
+        typer.echo(f"  positions: opened={p.positions_opened}  closed={p.positions_closed}")
+        typer.echo(
+            f"  strategy: tp={p.tp_pct}% sl={p.sl_pct}% hold={p.max_hold_min}m "
+            f"slip={p.slippage_pct}% fee=${p.fee_usd}"
+        )
+
+    _arun(_run())
+
+
+@paper_app.command("init")
+def paper_init_cmd(
+    balance: float = typer.Option(None, help="Starting balance USD (default: env)"),
+    force: bool = typer.Option(False, "--force", help="Wipe existing portfolio + positions"),
+) -> None:
+    """Create or reset the paper portfolio."""
+
+    async def _run():
+        await init_db()
+        async with SessionLocal() as s:
+            existing = (await s.execute(select(PaperPortfolio))).scalars().all()
+        if existing and not force:
+            typer.echo("portfolio already exists; pass --force to reset", err=True)
+            raise typer.Exit(1)
+        p = await reset_portfolio(balance=balance)
+        typer.echo(f"portfolio #{p.id} ready: ${p.current_cash_usd:.2f}")
+
+    _arun(_run())
+
+
+@paper_app.command("open")
+def paper_open_cmd() -> None:
+    """One-shot: scan for new signals/buys and open paper positions."""
+
+    async def _run():
+        await init_db()
+        n = await open_new_positions()
+        typer.echo(f"opened {n} position(s)")
+
+    _arun(_run())
+
+
+@paper_app.command("manage")
+def paper_manage_cmd() -> None:
+    """One-shot: mark-to-market open positions and close on TP/SL/timeout."""
+
+    async def _run():
+        await init_db()
+        n = await manage_positions()
+        typer.echo(f"closed {n} position(s)")
+
+    _arun(_run())
+
+
+@paper_app.command("loop")
+def paper_loop_cmd(
+    interval: int = typer.Option(0, help="Tick interval seconds (0=env default)"),
+) -> None:
+    """Continuous loop: open new + manage existing every interval seconds."""
+
+    async def _run():
+        await init_db()
+        await paper_loop(interval=interval or None)
+
+    _arun(_run())
+
+
+@paper_app.command("positions")
+def paper_positions_cmd(
+    status: str = typer.Option("open", help="open | closed | all"),
+    limit: int = typer.Option(30, help="How many to print"),
+) -> None:
+    async def _run():
+        await init_db()
+        async with SessionLocal() as s:
+            q = select(PaperPosition)
+            if status == "open":
+                q = q.where(PaperPosition.status == "open").order_by(PaperPosition.opened_at.desc())
+            elif status == "closed":
+                q = q.where(PaperPosition.status == "closed").order_by(PaperPosition.closed_at.desc())
+            else:
+                q = q.order_by(PaperPosition.opened_at.desc())
+            q = q.limit(limit)
+            rows = list((await s.execute(q)).scalars().all())
+        if not rows:
+            typer.echo("(no positions)")
+            return
+        typer.echo(
+            f"{'id':>4} {'opened':<16} {'kind':<7} {'sym':<10} {'status':<7} "
+            f"{'entry$':>10} {'now/exit$':>10} {'pnl$':>8} {'pnl%':>7} {'reason':<8}"
+        )
+        for r in rows:
+            now_or_exit = r.exit_price_filled if r.status == "closed" else r.last_price
+            pnl = r.realized_pnl_usd if r.status == "closed" else (
+                (now_or_exit - r.entry_price_filled) * r.entry_tokens if now_or_exit else 0.0
+            )
+            pnl_pct = r.realized_pnl_pct if r.status == "closed" else (
+                ((now_or_exit / r.entry_price_filled) - 1) * 100 if now_or_exit > 0 else 0.0
+            )
+            typer.echo(
+                f"{r.id:>4} {r.opened_at:%m-%d %H:%M:%S} {r.source_kind:<7} "
+                f"{(r.symbol or r.mint[:6]):<10} {r.status:<7} "
+                f"${r.entry_price_filled:>9.4g} ${now_or_exit:>9.4g} "
+                f"{pnl:>+7.2f} {pnl_pct:>+6.1f}% {r.exit_reason:<8}"
+            )
+
+    _arun(_run())
+
+
+@paper_app.command("leaderboard")
+def paper_leaderboard_cmd(
+    by: str = typer.Option("source_key", help="source_key | source_kind"),
+    min_trades: int = typer.Option(3, help="Min closed trades to qualify"),
+    limit: int = typer.Option(30, help="Top N rows"),
+) -> None:
+    """Per-source-key leaderboard from CLOSED paper positions only."""
+
+    async def _run():
+        await init_db()
+        async with SessionLocal() as s:
+            closed = list(
+                (
+                    await s.execute(
+                        select(PaperPosition).where(PaperPosition.status == "closed")
+                    )
+                ).scalars().all()
+            )
+        if not closed:
+            typer.echo("(no closed positions yet)")
+            return
+        groups: dict[str, list[PaperPosition]] = {}
+        for p in closed:
+            key = p.source_key if by == "source_key" else p.source_kind
+            groups.setdefault(key, []).append(p)
+        out = []
+        for k, items in groups.items():
+            n = len(items)
+            if n < min_trades:
+                continue
+            wins = [p for p in items if p.realized_pnl_usd > 0]
+            pnls_pct = [p.realized_pnl_pct for p in items]
+            avg_win = (
+                sum(p.realized_pnl_pct for p in wins) / len(wins) if wins else 0.0
+            )
+            avg_loss = (
+                sum(p.realized_pnl_pct for p in items if p.realized_pnl_pct <= 0)
+                / max(n - len(wins), 1)
+            )
+            win_rate = len(wins) / n
+            out.append({
+                "key": k,
+                "n": n,
+                "wins": len(wins),
+                "win_rate": win_rate,
+                "avg_pnl_pct": sum(pnls_pct) / n,
+                "expectancy": win_rate * avg_win + (1 - win_rate) * avg_loss,
+                "sum_usd": sum(p.realized_pnl_usd for p in items),
+            })
+        out.sort(key=lambda r: r["expectancy"], reverse=True)
+        typer.echo(
+            f"{'key':<46} {'closed':>6} {'win%':>5} {'avg%':>7} {'exp%':>7} {'sum$':>9}"
+        )
+        for r in out[:limit]:
+            typer.echo(
+                f"{r['key'][:46]:<46} {r['n']:>6} "
+                f"{r['win_rate']*100:>4.0f}% {r['avg_pnl_pct']:>+6.1f}% "
+                f"{r['expectancy']:>+6.1f}% {r['sum_usd']:>+8.2f}"
+            )
 
     _arun(_run())
 

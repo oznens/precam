@@ -148,6 +148,65 @@ class BacktestTrade(SQLModel, table=True):
     max_adverse_pct: float = 0.0
 
 
+class PaperPortfolio(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    starting_balance_usd: float
+    current_cash_usd: float
+    total_realized_pnl_usd: float = 0.0
+    total_fees_usd: float = 0.0
+    total_slippage_usd: float = 0.0
+    positions_opened: int = 0
+    positions_closed: int = 0
+    position_size_usd: float = 50.0
+    max_concurrent: int = 10
+    slippage_pct: float = 1.0
+    fee_usd: float = 0.50
+    tp_pct: float = 100.0
+    sl_pct: float = -30.0
+    max_hold_min: int = 720
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class PaperPosition(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    portfolio_id: int = Field(index=True)
+    source_kind: str = Field(index=True)
+    source_ref: str = Field(index=True)
+    source_key: str = Field(index=True, default="")
+    mint: str = Field(index=True)
+    symbol: str = ""
+    name: str = ""
+
+    opened_at: datetime = Field(default_factory=datetime.utcnow)
+    entry_price_market: float = 0.0
+    entry_price_filled: float = 0.0
+    entry_amount_usd: float = 0.0
+    entry_tokens: float = 0.0
+    entry_fee_usd: float = 0.0
+    entry_slippage_usd: float = 0.0
+
+    tp_pct: float
+    sl_pct: float
+    max_hold_min: int
+
+    status: str = Field(index=True, default="open")
+    last_price: float = 0.0
+    last_checked_at: Optional[datetime] = None
+    max_favourable_pct: float = 0.0
+    max_adverse_pct: float = 0.0
+
+    closed_at: Optional[datetime] = None
+    exit_price_market: float = 0.0
+    exit_price_filled: float = 0.0
+    exit_reason: str = ""
+    exit_fee_usd: float = 0.0
+    exit_slippage_usd: float = 0.0
+    realized_pnl_usd: float = 0.0
+    realized_pnl_pct: float = 0.0
+
+
 class Signal(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     mint: str = Field(index=True)

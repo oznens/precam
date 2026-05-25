@@ -9,6 +9,8 @@ from .db import (
     BacktestRun,
     BacktestTrade,
     Kol,
+    PaperPortfolio,
+    PaperPosition,
     Position,
     PumpToken,
     SessionLocal,
@@ -219,6 +221,81 @@ async def backtest_run_page(request: Request, run_id: int, min_trades: int = 3):
         request,
         "backtest_run.html",
         {"run": run, "trades": trades, "leaderboard": lb, "min_trades": min_trades},
+    )
+
+
+@app.get("/paper", response_class=HTMLResponse)
+async def paper_page(request: Request):
+    async with SessionLocal() as s:
+        portfolio = (await s.execute(select(PaperPortfolio))).scalar_one_or_none()
+        opens = list(
+            (
+                await s.execute(
+                    select(PaperPosition)
+                    .where(PaperPosition.status == "open")
+                    .order_by(PaperPosition.opened_at.desc())
+                )
+            ).scalars().all()
+        )
+        closed = list(
+            (
+                await s.execute(
+                    select(PaperPosition)
+                    .where(PaperPosition.status == "closed")
+                    .order_by(PaperPosition.closed_at.desc())
+                    .limit(100)
+                )
+            ).scalars().all()
+        )
+
+    leaderboard = []
+    if closed:
+        groups: dict[str, list] = {}
+        for p in closed:
+            groups.setdefault(p.source_key or p.source_kind, []).append(p)
+        for k, items in groups.items():
+            if len(items) < 2:
+                continue
+            wins = [p for p in items if p.realized_pnl_usd > 0]
+            n = len(items)
+            pnls_pct = [p.realized_pnl_pct for p in items]
+            avg_win = (
+                sum(p.realized_pnl_pct for p in wins) / len(wins) if wins else 0.0
+            )
+            avg_loss = (
+                sum(p.realized_pnl_pct for p in items if p.realized_pnl_pct <= 0)
+                / max(n - len(wins), 1)
+            )
+            win_rate = len(wins) / n
+            leaderboard.append({
+                "key": k, "n": n, "wins": len(wins),
+                "win_rate": win_rate,
+                "avg_pnl_pct": sum(pnls_pct) / n,
+                "expectancy": win_rate * avg_win + (1 - win_rate) * avg_loss,
+                "sum_usd": sum(p.realized_pnl_usd for p in items),
+            })
+        leaderboard.sort(key=lambda r: r["expectancy"], reverse=True)
+
+    open_value = sum(o.last_price * o.entry_tokens for o in opens if o.last_price > 0)
+    equity = (portfolio.current_cash_usd if portfolio else 0) + open_value
+    roi = (
+        (equity / portfolio.starting_balance_usd - 1) * 100
+        if portfolio and portfolio.starting_balance_usd > 0
+        else 0.0
+    )
+
+    return templates.TemplateResponse(
+        request,
+        "paper.html",
+        {
+            "p": portfolio,
+            "opens": opens,
+            "closed": closed,
+            "leaderboard": leaderboard,
+            "open_value": open_value,
+            "equity": equity,
+            "roi": roi,
+        },
     )
 
 

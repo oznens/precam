@@ -88,7 +88,49 @@ precam backtest leaderboard <run_id> [--min-trades 3]
 # Auto-tune from backtest results (always dry-run by default; pass --apply to commit)
 precam autotune kol <run_id> [--alpha 0.5] [--min-closed 5] [--apply]
 precam autotune prune-watch <run_id> [--min-expectancy 5] [--apply]
+
+# Paper-trade: live simulator with slippage + fees
+precam paper init [--balance 1000] [--force]
+precam paper open                                 # one-shot: open new positions
+precam paper manage                               # one-shot: close on TP/SL/timeout
+precam paper loop                                 # both forever
+precam paper status
+precam paper positions [--status open|closed|all]
+precam paper leaderboard [--by source_key|source_kind]
 ```
+
+## Paper trade (live forward test)
+
+Where backtest replays history, paper trade rides on top of the live
+signal pipeline:
+
+```bash
+precam paper init --balance 1000
+precam paper loop                           # one terminal — runs forever
+precam worker                               # KOL signal flow
+precam watcher                              # smart-money flow
+precam dashboard                            # http://localhost:8000/paper
+```
+
+Each tick the paper loop:
+1. Picks unprocessed Signals (must be `is_early=True` + liq above threshold)
+   and unprocessed watched-wallet BUY Trades (above `WATCHER_MIN_BUY_USD`).
+2. Fetches current DexScreener price; if liquid, fills at
+   `price * (1 + slippage_pct)`. Deducts size + fee from cash.
+3. For every open position, marks to market each tick. Closes on:
+   - `up_pct >= tp_pct`  → exit at TP (with slippage)
+   - `up_pct <= sl_pct`  → exit at SL (with slippage)
+   - `held >= max_hold_min` → exit at current price (with slippage)
+4. Records realized PnL; portfolio's `current_cash_usd` updates with
+   proceeds; total fees and slippage accrue separately for diagnostics.
+
+The `/paper` page shows live equity, ROI vs starting balance, open
+positions with unrealized PnL, recently closed positions, and a
+per-source-key leaderboard.
+
+Limitations vs. live trading: polling is interval-based (default 60s) so
+spikes between ticks are invisible. Slippage is flat percentage —
+real impact depends on pool depth. Adjust per-portfolio in `init`.
 
 ## Auto-tune (closing the loop)
 
@@ -187,5 +229,5 @@ the strongest signal in the system.
 - [x] Real-time alerts when a top-ranked wallet opens a new position + convergence boost
 - [x] Backtest harness on stored signals (TP/SL/timeout, per-source leaderboard)
 - [x] Auto-tune KOL weights & prune watch list from backtest results
+- [x] Paper-trade simulator (live signals → virtual portfolio with slippage + fees)
 - [ ] Discord webhook output
-- [ ] Paper-trade simulator
