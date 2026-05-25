@@ -1,0 +1,29 @@
+# Seed list of Solana meme alpha accounts to track.
+# These are public KOLs frequently cited in the SOL meme scene.
+# Adjust weights (0-3 typical): higher = more trusted -> higher signal score.
+# Curate this list yourself over time based on hit rate.
+
+- handle: ansemwarhol
+  weight: 3.0
+  notes: Ansem — large-cap meme caller
+- handle: cented7
+  weight: 2.5
+  notes: Cented — active SOL trader
+- handle: mitcholdsbags
+  weight: 2.0
+  notes: Mitch — meme alpha
+- handle: zrycryptotrades
+  weight: 2.0
+  notes: Zry — meme calls
+- handle: aeyakovenko
+  weight: 1.0
+  notes: Anatoly — Solana co-founder (ecosystem context)
+- handle: pumpdotfun
+  weight: 1.5
+  notes: Pump.fun official — new launches
+- handle: dexscreener
+  weight: 1.0
+  notes: DexScreener official — listings
+- handle: solanafloor
+  weight: 1.0
+  notes: Solana Floor — news

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>precam — solana alpha</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <meta http-equiv="refresh" content="30" />
+</head>
+<body class="bg-zinc-950 text-zinc-100 font-mono">
+  <div class="max-w-6xl mx-auto p-6">
+    <header class="flex items-baseline justify-between mb-6">
+      <h1 class="text-2xl font-bold tracking-tight">precam <span class="text-zinc-500 text-sm">solana meme alpha</span></h1>
+      <div class="text-sm text-zinc-400">
+        signals: <span class="text-zinc-100">{{ total }}</span> ·
+        early: <span class="text-emerald-400">{{ early_count }}</span> ·
+        kols: <span class="text-zinc-100">{{ kols|length }}</span>
+      </div>
+    </header>
+
+    <nav class="mb-4 text-sm">
+      <a class="px-2 py-1 rounded {{ 'bg-zinc-800' if not early_only else 'hover:bg-zinc-900' }}" href="/">all</a>
+      <a class="px-2 py-1 rounded {{ 'bg-emerald-900' if early_only else 'hover:bg-zinc-900' }}" href="/?early=1">early only</a>
+    </nav>
+
+    <div class="overflow-x-auto border border-zinc-800 rounded">
+      <table class="w-full text-sm">
+        <thead class="bg-zinc-900 text-zinc-400 text-left">
+          <tr>
+            <th class="px-3 py-2">when</th>
+            <th class="px-3 py-2">kol</th>
+            <th class="px-3 py-2">token</th>
+            <th class="px-3 py-2 text-right">score</th>
+            <th class="px-3 py-2 text-right">liq</th>
+            <th class="px-3 py-2 text-right">fdv</th>
+            <th class="px-3 py-2 text-right">age</th>
+            <th class="px-3 py-2">mint</th>
+            <th class="px-3 py-2">links</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for s in signals %}
+          <tr class="border-t border-zinc-900 {{ 'bg-emerald-950/40' if s.is_early else '' }}">
+            <td class="px-3 py-2 text-zinc-400">{{ s.created_at.strftime('%m-%d %H:%M') }}</td>
+            <td class="px-3 py-2"><a class="text-sky-400 hover:underline" href="https://x.com/{{ s.handle }}" target="_blank">@{{ s.handle }}</a></td>
+            <td class="px-3 py-2">
+              <div class="font-semibold">${{ (s.symbol or '?').lstrip('$') }}</div>
+              <div class="text-zinc-500 text-xs">{{ s.name }}</div>
+            </td>
+            <td class="px-3 py-2 text-right font-bold {{ 'text-emerald-400' if s.score >= 60 else ('text-amber-400' if s.score >= 40 else 'text-zinc-400') }}">
+              {{ '%.0f'|format(s.score) }}
+            </td>
+            <td class="px-3 py-2 text-right">${{ '{:,.0f}'.format(s.liquidity_usd) }}</td>
+            <td class="px-3 py-2 text-right">${{ '{:,.0f}'.format(s.fdv_usd) }}</td>
+            <td class="px-3 py-2 text-right text-zinc-400">
+              {% set m = s.age_min %}
+              {% if m < 60 %}{{ '%.0f'|format(m) }}m
+              {% elif m < 1440 %}{{ '%.1f'|format(m/60) }}h
+              {% else %}{{ '%.1f'|format(m/1440) }}d{% endif %}
+            </td>
+            <td class="px-3 py-2 text-xs text-zinc-500">{{ s.mint[:6] }}…{{ s.mint[-4:] }}</td>
+            <td class="px-3 py-2 text-xs">
+              <a class="text-sky-400 hover:underline" href="{{ s.dex_url }}" target="_blank">dex</a> ·
+              <a class="text-sky-400 hover:underline" href="https://gmgn.ai/sol/token/{{ s.mint }}" target="_blank">gmgn</a> ·
+              <a class="text-sky-400 hover:underline" href="{{ s.tweet_url }}" target="_blank">tweet</a>
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="9" class="px-3 py-8 text-center text-zinc-500">no signals yet — run <code>precam worker</code></td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <section class="mt-8">
+      <h2 class="text-zinc-400 text-sm uppercase tracking-widest mb-2">tracked kols</h2>
+      <div class="flex flex-wrap gap-2 text-xs">
+        {% for k in kols %}
+          <span class="px-2 py-1 rounded bg-zinc-900 border border-zinc-800">
+            <a class="text-sky-400 hover:underline" href="https://x.com/{{ k.handle }}" target="_blank">@{{ k.handle }}</a>
+            <span class="text-zinc-500">w={{ k.weight }}</span>
+          </span>
+        {% endfor %}
+      </div>
+    </section>
+  </div>
+</body>
+</html>
