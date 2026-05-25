@@ -5,7 +5,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import func, select
 
-from .db import Kol, SessionLocal, Signal, init_db
+from .db import Kol, Position, SessionLocal, Signal, Wallet, WalletStat, init_db
 
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 app = FastAPI(title="precam dashboard")
@@ -49,6 +49,71 @@ async def index(request: Request, early: int = 0, limit: int = 100):
             "early_count": early_count,
             "early_only": bool(early),
         },
+    )
+
+
+@app.get("/wallets", response_class=HTMLResponse)
+async def wallets_page(
+    request: Request, by: str = "expectancy", min_closed: int = 5, limit: int = 100
+):
+    async with SessionLocal() as s:
+        res = await s.execute(
+            select(WalletStat).where(WalletStat.closed_positions >= min_closed)
+        )
+        stats = list(res.scalars().all())
+        wallets = {
+            w.address: w
+            for w in (await s.execute(select(Wallet))).scalars().all()
+        }
+        total_wallets = (await s.execute(select(func.count(Wallet.address)))).scalar_one()
+
+    key = {
+        "expectancy": lambda r: r.expectancy,
+        "win_rate": lambda r: r.win_rate,
+        "pnl": lambda r: r.total_realized_pnl_usd,
+    }.get(by, lambda r: r.expectancy)
+    stats.sort(key=key, reverse=True)
+    rows = [
+        {"stat": st, "wallet": wallets.get(st.wallet)}
+        for st in stats[:limit]
+    ]
+    return templates.TemplateResponse(
+        request,
+        "wallets.html",
+        {
+            "rows": rows,
+            "sort_by": by,
+            "min_closed": min_closed,
+            "total_wallets": total_wallets,
+            "qualified": len(stats),
+        },
+    )
+
+
+@app.get("/wallet/{address}", response_class=HTMLResponse)
+async def wallet_detail(request: Request, address: str):
+    async with SessionLocal() as s:
+        wallet = (
+            await s.execute(select(Wallet).where(Wallet.address == address))
+        ).scalar_one_or_none()
+        stat = (
+            await s.execute(select(WalletStat).where(WalletStat.wallet == address))
+        ).scalar_one_or_none()
+        positions = list(
+            (
+                await s.execute(
+                    select(Position).where(Position.wallet == address).order_by(
+                        Position.opened_at.desc()
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        )
+    return templates.TemplateResponse(
+        request,
+        "wallet_detail.html",
+        {"wallet": wallet, "stat": stat, "positions": positions, "address": address},
     )
 
 

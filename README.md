@@ -49,9 +49,11 @@ precam dashboard     # in another (http://localhost:8000)
 ```
 precam init                        # create db + dirs
 precam scan                        # one pass over all KOLs
-precam worker                      # loop forever
-precam dashboard                   # web ui
+precam worker                      # twitter loop
+precam dashboard                   # web ui (http://localhost:8000)
+precam signals [--limit N] [--early-only]
 
+# Twitter KOL tracker
 precam kol add <handle> [--weight N] [--notes "..."]
 precam kol remove <handle>
 precam kol list
@@ -61,10 +63,28 @@ precam twitter add <u> <p> <email> <epw>
 precam twitter login
 precam twitter status
 
-precam signals [--limit N] [--early-only]
+# Smart wallet tracker (on-chain)
+precam wallet discover [--top-pools N] [--pages N] [--min-buys N]
+precam wallet refresh [ADDRESS] [--limit N] [--pages N]
+precam wallet rank [--by expectancy|win_rate|pnl] [--min-closed N]
+precam wallet list
 ```
 
-## Scoring
+## How the smart wallet tracker works
+
+1. **Discover**: pull GeckoTerminal trending Solana pools → for each pool, fetch recent
+   swaps from Helius → record every wallet that bought the base token → wallets that
+   appear in ≥ N trending pools are promoted to the watch list.
+2. **Refresh**: for each watched wallet, fetch the last ~500 swap txs from Helius,
+   normalize into trades, reconstruct positions, compute realized PnL & stats.
+3. **Rank** by **expectancy** = (win_rate × avg_win%) − (loss_rate × avg_loss%) — the
+   honest meme-trading metric. A trader with 30% win rate but 10x average wins beats a
+   90% win rate / +2% trader.
+
+The dashboard at `/wallets` shows the leaderboard; clicking a wallet shows its position
+history at `/wallet/<address>`.
+
+## Scoring (KOL signals)
 
 `score = age + liquidity + volume/liquidity + buy-bias + kol-weight` (0-100).
 A find is tagged `EARLY` when the pair age is below `EARLY_MAX_AGE_MIN` and
@@ -72,7 +92,9 @@ liquidity is above `MIN_LIQUIDITY_USD` (see `.env`).
 
 ## Roadmap
 
-- [ ] Smart-wallet tracker (cluster wallets by historical PnL via Helius enhanced txs)
+- [x] KOL Twitter scanner with CA extraction + Telegram alerts
+- [x] Smart-wallet discovery + expectancy-based leaderboard
+- [ ] Real-time alerts when a top-ranked wallet opens a new position
 - [ ] Pump.fun new-mint scanner with rug heuristics (dev holdings, LP burn)
 - [ ] Backtest harness on stored signals
 - [ ] Discord webhook output

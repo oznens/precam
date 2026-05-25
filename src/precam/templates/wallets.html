@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>precam · wallets</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-zinc-950 text-zinc-100 font-mono">
+  <div class="max-w-6xl mx-auto p-6">
+    <header class="flex items-baseline justify-between mb-6">
+      <h1 class="text-2xl font-bold tracking-tight">
+        <a href="/" class="text-zinc-500 hover:text-zinc-100">precam</a> · smart wallets
+      </h1>
+      <div class="text-sm text-zinc-400">
+        tracked: <span class="text-zinc-100">{{ total_wallets }}</span> ·
+        qualified (≥{{ min_closed }} closed): <span class="text-emerald-400">{{ qualified }}</span>
+      </div>
+    </header>
+
+    <nav class="mb-4 text-sm flex gap-4 items-center">
+      <span class="text-zinc-500">sort:</span>
+      {% for opt in ['expectancy', 'win_rate', 'pnl'] %}
+        <a class="px-2 py-1 rounded {{ 'bg-emerald-900' if sort_by == opt else 'hover:bg-zinc-900' }}" href="/wallets?by={{ opt }}&min_closed={{ min_closed }}">{{ opt }}</a>
+      {% endfor %}
+      <a class="ml-auto text-zinc-500 hover:text-zinc-100" href="/">← signals</a>
+    </nav>
+
+    <div class="overflow-x-auto border border-zinc-800 rounded">
+      <table class="w-full text-sm">
+        <thead class="bg-zinc-900 text-zinc-400 text-left">
+          <tr>
+            <th class="px-3 py-2">wallet</th>
+            <th class="px-3 py-2 text-right">closed</th>
+            <th class="px-3 py-2 text-right">win%</th>
+            <th class="px-3 py-2 text-right">avg win</th>
+            <th class="px-3 py-2 text-right">avg loss</th>
+            <th class="px-3 py-2 text-right">expectancy</th>
+            <th class="px-3 py-2 text-right">realized pnl</th>
+            <th class="px-3 py-2">via</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for row in rows %}
+          {% set st = row.stat %}{% set w = row.wallet %}
+          <tr class="border-t border-zinc-900 hover:bg-zinc-900/40">
+            <td class="px-3 py-2">
+              <a class="text-sky-400 hover:underline" href="/wallet/{{ st.wallet }}">{{ st.wallet[:6] }}…{{ st.wallet[-4:] }}</a>
+            </td>
+            <td class="px-3 py-2 text-right">{{ st.closed_positions }}</td>
+            <td class="px-3 py-2 text-right {{ 'text-emerald-400' if st.win_rate >= 0.5 else 'text-zinc-300' }}">{{ '%.0f'|format(st.win_rate * 100) }}%</td>
+            <td class="px-3 py-2 text-right text-emerald-400">{{ '%+.0f'|format(st.avg_win_pct) }}%</td>
+            <td class="px-3 py-2 text-right text-rose-400">{{ '%+.0f'|format(st.avg_loss_pct) }}%</td>
+            <td class="px-3 py-2 text-right font-bold {{ 'text-emerald-400' if st.expectancy > 0 else 'text-rose-400' }}">{{ '%+.1f'|format(st.expectancy) }}%</td>
+            <td class="px-3 py-2 text-right {{ 'text-emerald-400' if st.total_realized_pnl_usd > 0 else 'text-rose-400' }}">${{ '{:,.0f}'.format(st.total_realized_pnl_usd) }}</td>
+            <td class="px-3 py-2 text-xs text-zinc-500">{{ w.discovered_via if w else '-' }}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="8" class="px-3 py-8 text-center text-zinc-500">
+            no qualified wallets — run <code>precam wallet discover</code> then <code>precam wallet refresh</code>
+          </td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</body>
+</html>

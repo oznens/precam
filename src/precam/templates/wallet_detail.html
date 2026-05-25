@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>precam · {{ address[:6] }}…{{ address[-4:] }}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-zinc-950 text-zinc-100 font-mono">
+  <div class="max-w-6xl mx-auto p-6">
+    <header class="mb-6">
+      <a href="/wallets" class="text-zinc-500 hover:text-zinc-100 text-sm">← wallets</a>
+      <h1 class="text-xl font-bold tracking-tight mt-2 break-all">{{ address }}</h1>
+      {% if wallet and wallet.label %}<div class="text-zinc-400 text-sm mt-1">{{ wallet.label }}</div>{% endif %}
+      <div class="text-xs text-zinc-500 mt-1">
+        <a class="text-sky-400 hover:underline" href="https://solscan.io/account/{{ address }}" target="_blank">solscan</a> ·
+        <a class="text-sky-400 hover:underline" href="https://gmgn.ai/sol/address/{{ address }}" target="_blank">gmgn</a>
+      </div>
+    </header>
+
+    {% if stat %}
+    <section class="grid grid-cols-2 md:grid-cols-6 gap-3 mb-6">
+      <div class="bg-zinc-900 border border-zinc-800 rounded p-3">
+        <div class="text-xs text-zinc-500">closed</div>
+        <div class="text-xl">{{ stat.closed_positions }}</div>
+      </div>
+      <div class="bg-zinc-900 border border-zinc-800 rounded p-3">
+        <div class="text-xs text-zinc-500">win rate</div>
+        <div class="text-xl {{ 'text-emerald-400' if stat.win_rate >= 0.5 else '' }}">{{ '%.0f'|format(stat.win_rate * 100) }}%</div>
+      </div>
+      <div class="bg-zinc-900 border border-zinc-800 rounded p-3">
+        <div class="text-xs text-zinc-500">avg win</div>
+        <div class="text-xl text-emerald-400">{{ '%+.0f'|format(stat.avg_win_pct) }}%</div>
+      </div>
+      <div class="bg-zinc-900 border border-zinc-800 rounded p-3">
+        <div class="text-xs text-zinc-500">avg loss</div>
+        <div class="text-xl text-rose-400">{{ '%+.0f'|format(stat.avg_loss_pct) }}%</div>
+      </div>
+      <div class="bg-zinc-900 border border-zinc-800 rounded p-3">
+        <div class="text-xs text-zinc-500">expectancy</div>
+        <div class="text-xl {{ 'text-emerald-400' if stat.expectancy > 0 else 'text-rose-400' }}">{{ '%+.1f'|format(stat.expectancy) }}%</div>
+      </div>
+      <div class="bg-zinc-900 border border-zinc-800 rounded p-3">
+        <div class="text-xs text-zinc-500">realized pnl</div>
+        <div class="text-xl {{ 'text-emerald-400' if stat.total_realized_pnl_usd > 0 else 'text-rose-400' }}">${{ '{:,.0f}'.format(stat.total_realized_pnl_usd) }}</div>
+      </div>
+    </section>
+    {% endif %}
+
+    <h2 class="text-zinc-400 text-sm uppercase tracking-widest mb-2">positions</h2>
+    <div class="overflow-x-auto border border-zinc-800 rounded">
+      <table class="w-full text-sm">
+        <thead class="bg-zinc-900 text-zinc-400 text-left">
+          <tr>
+            <th class="px-3 py-2">opened</th>
+            <th class="px-3 py-2">status</th>
+            <th class="px-3 py-2">mint</th>
+            <th class="px-3 py-2 text-right">bought $</th>
+            <th class="px-3 py-2 text-right">sold $</th>
+            <th class="px-3 py-2 text-right">pnl $</th>
+            <th class="px-3 py-2 text-right">pnl %</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for p in positions %}
+          <tr class="border-t border-zinc-900">
+            <td class="px-3 py-2 text-zinc-400">{{ p.opened_at.strftime('%m-%d %H:%M') }}</td>
+            <td class="px-3 py-2">
+              <span class="px-2 py-0.5 rounded text-xs {{ 'bg-emerald-900 text-emerald-200' if p.status == 'closed' else 'bg-amber-900 text-amber-200' }}">{{ p.status }}</span>
+            </td>
+            <td class="px-3 py-2 text-xs">
+              <a class="text-sky-400 hover:underline" href="https://dexscreener.com/solana/{{ p.mint }}" target="_blank">{{ p.mint[:6] }}…{{ p.mint[-4:] }}</a>
+            </td>
+            <td class="px-3 py-2 text-right">${{ '{:,.0f}'.format(p.bought_usd) }}</td>
+            <td class="px-3 py-2 text-right">${{ '{:,.0f}'.format(p.sold_usd) }}</td>
+            <td class="px-3 py-2 text-right {{ 'text-emerald-400' if p.realized_pnl_usd > 0 else ('text-rose-400' if p.realized_pnl_usd < 0 else 'text-zinc-500') }}">${{ '{:,.0f}'.format(p.realized_pnl_usd) }}</td>
+            <td class="px-3 py-2 text-right {{ 'text-emerald-400' if p.realized_pnl_pct > 0 else ('text-rose-400' if p.realized_pnl_pct < 0 else 'text-zinc-500') }}">{{ '%+.0f'|format(p.realized_pnl_pct) }}%</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="7" class="px-3 py-8 text-center text-zinc-500">no positions yet</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</body>
+</html>

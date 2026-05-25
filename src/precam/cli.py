@@ -7,15 +7,18 @@ from loguru import logger
 from sqlalchemy import delete, select
 
 from .config import settings
-from .db import Kol, SessionLocal, Signal, init_db
+from .db import Kol, SessionLocal, Signal, Wallet, WalletStat, init_db
 from .twitter.scraper import get_api
 from .worker import run_forever, scan_once
+from .workers.wallets import discover_from_trending, refresh_all, refresh_wallet
 
 app = typer.Typer(no_args_is_help=True, help="precam — Solana meme alpha tracker")
 kol_app = typer.Typer(no_args_is_help=True, help="Manage KOL (key opinion leader) Twitter handles")
 tw_app = typer.Typer(no_args_is_help=True, help="Manage twscrape Twitter accounts")
+wallet_app = typer.Typer(no_args_is_help=True, help="Smart wallet discovery + ranking")
 app.add_typer(kol_app, name="kol")
 app.add_typer(tw_app, name="twitter")
+app.add_typer(wallet_app, name="wallet")
 
 
 def _arun(coro):
@@ -209,6 +212,97 @@ def signals(limit: int = 20, early_only: bool = False) -> None:
                 f"{r.created_at:%m-%d %H:%M} {flag} @{r.handle:<18} "
                 f"{r.symbol:<8} score={r.score:5.1f} liq=${r.liquidity_usd:>10,.0f} {r.mint}"
             )
+
+    _arun(_run())
+
+
+@wallet_app.command("discover")
+def wallet_discover(
+    top_pools: int = typer.Option(15, help="Number of trending pools to scan"),
+    pages: int = typer.Option(3, help="Helius pagination per pool (~100 txs each)"),
+    min_buys: int = typer.Option(2, help="Min trending-pool buys to promote a wallet"),
+) -> None:
+    """Discover candidate smart wallets via trending pools' early buyers."""
+
+    async def _run():
+        await init_db()
+        n = await discover_from_trending(
+            top_pools=top_pools, max_pages_per_pool=pages, min_buys_to_promote=min_buys
+        )
+        typer.echo(f"added {n} new wallet(s)")
+
+    _arun(_run())
+
+
+@wallet_app.command("refresh")
+def wallet_refresh(
+    address: str = typer.Argument("", help="Wallet address; omit to refresh all"),
+    limit: int = typer.Option(0, help="Cap on number of wallets when refreshing all"),
+    pages: int = typer.Option(5, help="Helius pagination depth"),
+) -> None:
+    """Rebuild trades/positions/stats from on-chain swap history."""
+
+    async def _run():
+        await init_db()
+        if address:
+            await refresh_wallet(address, max_pages=pages)
+            typer.echo(f"refreshed {address}")
+        else:
+            n = await refresh_all(limit=limit or None)
+            typer.echo(f"refreshed {n} wallet(s)")
+
+    _arun(_run())
+
+
+@wallet_app.command("rank")
+def wallet_rank(
+    limit: int = typer.Option(30, help="How many to print"),
+    min_closed: int = typer.Option(5, help="Min closed positions to qualify"),
+    by: str = typer.Option("expectancy", help="Sort key: expectancy | win_rate | pnl"),
+) -> None:
+    """Print the smart-wallet leaderboard sorted by chosen metric."""
+
+    async def _run():
+        await init_db()
+        async with SessionLocal() as s:
+            res = await s.execute(select(WalletStat).where(WalletStat.closed_positions >= min_closed))
+            stats = list(res.scalars().all())
+        if not stats:
+            typer.echo(f"(no wallets with ≥{min_closed} closed positions yet)")
+            return
+        key = {
+            "expectancy": lambda r: r.expectancy,
+            "win_rate": lambda r: r.win_rate,
+            "pnl": lambda r: r.total_realized_pnl_usd,
+        }[by]
+        stats.sort(key=key, reverse=True)
+        typer.echo(
+            f"{'wallet':<46} {'closed':>6} {'win%':>5} {'avg+':>7} {'avg-':>7} "
+            f"{'exp%':>7} {'pnl$':>12}"
+        )
+        for r in stats[:limit]:
+            typer.echo(
+                f"{r.wallet:<46} {r.closed_positions:>6} "
+                f"{r.win_rate*100:>4.0f}% {r.avg_win_pct:>+6.0f}% {r.avg_loss_pct:>+6.0f}% "
+                f"{r.expectancy:>+6.1f}% {r.total_realized_pnl_usd:>12,.0f}"
+            )
+
+    _arun(_run())
+
+
+@wallet_app.command("list")
+def wallet_list(limit: int = 30) -> None:
+    async def _run():
+        await init_db()
+        async with SessionLocal() as s:
+            res = await s.execute(select(Wallet).order_by(Wallet.discovered_at.desc()).limit(limit))
+            ws = res.scalars().all()
+        if not ws:
+            typer.echo("(no wallets)")
+            return
+        for w in ws:
+            last = w.last_refreshed_at.isoformat() if w.last_refreshed_at else "-"
+            typer.echo(f"{w.address}  via={w.discovered_via:<10} last={last}  {w.label[:60]}")
 
     _arun(_run())
 
