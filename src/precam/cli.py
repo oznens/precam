@@ -38,7 +38,12 @@ from .workers.paper import (
     reset_portfolio,
 )
 from .workers.pump import listen as pump_listen, rescore_loop, rescore_pending
-from .workers.wallets import discover_from_trending, refresh_all, refresh_wallet
+from .workers.wallets import (
+    discover_from_graduated,
+    discover_from_trending,
+    refresh_all,
+    refresh_wallet,
+)
 from .workers.watcher import auto_watch_top, watch_forever, watch_once
 
 app = typer.Typer(no_args_is_help=True, help="precam — Solana meme alpha tracker")
@@ -296,6 +301,33 @@ def wallet_discover(
     _arun(_run())
 
 
+@wallet_app.command("discover-graduated")
+def wallet_discover_graduated(
+    top_pools: int = typer.Option(30, help="Number of graduated pools to scan"),
+    pages: int = typer.Option(2, help="Helius pagination per pool (~100 txs each)"),
+    min_buys: int = typer.Option(2, help="Min graduated-pool buys to promote a wallet"),
+    min_trade_size: float = typer.Option(
+        200.0, help="Ignore buys smaller than this USD (filters sniper bots)"
+    ),
+    max_hours: float = typer.Option(24.0, help="Only pools created within this many hours"),
+    min_reserve: float = typer.Option(
+        20000.0, help="Only pools with at least this USD liquidity (skip dust)"
+    ),
+) -> None:
+    """Discover smart wallets via newly-graduated Pump.fun pools (Raydium / pump-amm)."""
+
+    async def _run():
+        await init_db()
+        n = await discover_from_graduated(
+            top_pools=top_pools, max_pages_per_pool=pages,
+            min_buys_to_promote=min_buys, min_trade_size_usd=min_trade_size,
+            max_age_hours=max_hours, min_reserve_usd=min_reserve,
+        )
+        typer.echo(f"added {n} new wallet(s)")
+
+    _arun(_run())
+
+
 @wallet_app.command("refresh")
 def wallet_refresh(
     address: str = typer.Argument("", help="Wallet address; omit to refresh all"),
@@ -310,8 +342,8 @@ def wallet_refresh(
             await refresh_wallet(address, max_pages=pages)
             typer.echo(f"refreshed {address}")
         else:
-            n = await refresh_all(limit=limit or None)
-            typer.echo(f"refreshed {n} wallet(s)")
+            ok, fail = await refresh_all(limit=limit or None)
+            typer.echo(f"refreshed {ok} ok / {fail} failed")
 
     _arun(_run())
 

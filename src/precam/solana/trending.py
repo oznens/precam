@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timezone
 from typing import Any
 
@@ -13,7 +14,7 @@ class GeckoTerminalClient:
     def __init__(self, timeout: float = 12.0) -> None:
         self.timeout = timeout
 
-    @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=1, max=8))
+    @retry(stop=stop_after_attempt(4), wait=wait_exponential(min=2, max=20))
     async def _get(self, path: str, params: dict | None = None) -> dict[str, Any]:
         async with httpx.AsyncClient(timeout=self.timeout) as c:
             r = await c.get(f"{BASE}{path}", params=params, headers={"accept": "application/json"})
@@ -29,7 +30,9 @@ class GeckoTerminalClient:
         to walk multiple pages and merge (deduped on pool address)."""
         seen: set[str] = set()
         out: list[dict[str, Any]] = []
-        for p in range(page, page + pages):
+        for i, p in enumerate(range(page, page + pages)):
+            if i > 0:
+                await asyncio.sleep(2.0)
             data = await self._get(
                 "/networks/solana/trending_pools",
                 params={"page": p, "duration": duration},
@@ -51,6 +54,31 @@ class GeckoTerminalClient:
             params={"page": page, "sort": sort},
         )
         return [_shape_pool(p) for p in (data.get("data") or [])]
+
+    async def new_pools(self, pages: int = 1) -> list[dict[str, Any]]:
+        """Recently created Solana pools (~newest first). 20 per page, max page 10.
+
+        Sleeps between pages because GeckoTerminal page>1 isn't CF-cached and
+        will 429 if hit faster than ~1 req/sec.
+        """
+        seen: set[str] = set()
+        out: list[dict[str, Any]] = []
+        for i, p in enumerate(range(1, pages + 1)):
+            if i > 0:
+                await asyncio.sleep(2.0)
+            data = await self._get(
+                "/networks/solana/new_pools",
+                params={"page": p},
+            )
+            batch = [_shape_pool(x) for x in (data.get("data") or [])]
+            if not batch:
+                break
+            for pool in batch:
+                if pool["pool_address"] in seen:
+                    continue
+                seen.add(pool["pool_address"])
+                out.append(pool)
+        return out
 
 
 def _shape_pool(p: dict[str, Any]) -> dict[str, Any]:

@@ -54,9 +54,75 @@ def _normalize_side(items: list[dict[str, Any]], native: dict[str, Any] | None) 
     return out
 
 
+def _infer_from_token_transfers(tx: dict[str, Any]) -> dict[str, Any]:
+    """Fallback when events.swap is empty (Helius hasn't parsed the DEX yet, e.g. PUMP_AMM).
+
+    Reconstruct an events.swap-shaped dict from top-level tokenTransfers and
+    nativeTransfers, restricted to the feePayer's perspective:
+      tokenInputs  = tokens the feePayer SENT
+      tokenOutputs = tokens the feePayer RECEIVED
+      nativeInput  = SOL the feePayer SENT (aggregated)
+      nativeOutput = SOL the feePayer RECEIVED (aggregated)
+    """
+    trader = tx.get("feePayer") or ""
+    if not trader:
+        return {}
+
+    tt = tx.get("tokenTransfers") or []
+    nt = tx.get("nativeTransfers") or []
+
+    sent_tokens: dict[str, float] = {}
+    recv_tokens: dict[str, float] = {}
+    sent_lamports = 0
+    recv_lamports = 0
+
+    for tr in tt:
+        mint = tr.get("mint")
+        if not mint:
+            continue
+        try:
+            amt = float(tr.get("tokenAmount") or 0.0)
+        except Exception:
+            amt = 0.0
+        if amt <= 0:
+            continue
+        if tr.get("fromUserAccount") == trader:
+            sent_tokens[mint] = sent_tokens.get(mint, 0.0) + amt
+        if tr.get("toUserAccount") == trader:
+            recv_tokens[mint] = recv_tokens.get(mint, 0.0) + amt
+
+    for nx in nt:
+        try:
+            amt = int(nx.get("amount") or 0)
+        except Exception:
+            amt = 0
+        if amt <= 0:
+            continue
+        if nx.get("fromUserAccount") == trader:
+            sent_lamports += amt
+        if nx.get("toUserAccount") == trader:
+            recv_lamports += amt
+
+    if not sent_tokens and not recv_tokens and not sent_lamports and not recv_lamports:
+        return {}
+
+    return {
+        "tokenInputs":  [{"mint": m, "tokenAmount": a} for m, a in sent_tokens.items()],
+        "tokenOutputs": [{"mint": m, "tokenAmount": a} for m, a in recv_tokens.items()],
+        "nativeInput":  ({"account": trader, "amount": str(sent_lamports)} if sent_lamports else None),
+        "nativeOutput": ({"account": trader, "amount": str(recv_lamports)} if recv_lamports else None),
+    }
+
+
 def parse_swap(tx: dict[str, Any], sol_usd: float | None = None) -> list[dict[str, Any]]:
-    """Extract zero or more trade dicts from one Helius enhanced SWAP transaction."""
+    """Extract zero or more trade dicts from one Helius enhanced SWAP transaction.
+
+    Falls back to inferring inputs/outputs from raw token/native transfers when
+    `events.swap` is empty (Helius hasn't parsed the DEX, e.g. PUMP_AMM / pumpswap).
+    """
     swap = ((tx.get("events") or {}).get("swap")) or {}
+    if not swap:
+        swap = _infer_from_token_transfers(tx)
     if not swap:
         return []
 
