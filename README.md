@@ -97,7 +97,45 @@ precam paper loop                                 # both forever
 precam paper status
 precam paper positions [--status open|closed|all]
 precam paper leaderboard [--by source_key|source_kind]
+
+# Helius webhooks (push-based smart-money tracking, replaces polling)
+precam webhook sync [--base-url URL] [--auth SECRET]
+precam webhook list [--no-precam-only]
+precam webhook delete <id> | --all
 ```
+
+## Helius webhooks (push, replaces polling)
+
+The default `precam watcher` polls Helius for each watched wallet every
+`WATCHER_INTERVAL` seconds. That works but burns credits proportional to
+the number of wallets × polls/day. Webhooks flip the model: Helius
+calls *us* whenever any watched wallet appears in a swap.
+
+```bash
+# 1. expose the dashboard publicly (HTTPS required by Helius)
+#    quick path for local dev:
+cloudflared tunnel --url http://localhost:8000
+# or:
+ngrok http 8000
+
+# 2. set in .env (no trailing slash)
+echo "WEBHOOK_PUBLIC_URL=https://abc-123.trycloudflare.com" >> .env
+echo "WEBHOOK_SECRET=$(openssl rand -hex 16)" >> .env
+
+# 3. register hooks for every is_watched=True wallet
+precam webhook sync
+#  -> creates / updates / deletes Helius webhooks to match the local watch list
+#  -> when you precam wallet watch/unwatch later, re-run sync
+
+# 4. just run the dashboard — it owns the /webhooks/helius endpoint
+precam dashboard
+# (you can now stop `precam watcher`; webhooks replace polling)
+```
+
+Helius posts batches of parsed SWAP transactions to `/webhooks/helius` with
+the `WEBHOOK_SECRET` value in the `Authorization` header. The endpoint
+validates the header, persists each trade, runs the same convergence
+check + Telegram alert flow as the polling watcher.
 
 ## Paper trade (live forward test)
 
@@ -230,4 +268,5 @@ the strongest signal in the system.
 - [x] Backtest harness on stored signals (TP/SL/timeout, per-source leaderboard)
 - [x] Auto-tune KOL weights & prune watch list from backtest results
 - [x] Paper-trade simulator (live signals → virtual portfolio with slippage + fees)
+- [x] Helius webhooks (push-based watcher; cuts polling credits ~7×)
 - [ ] Discord webhook output

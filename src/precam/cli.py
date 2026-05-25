@@ -22,6 +22,12 @@ from .db import (
 )
 from .twitter.scraper import get_api
 from .worker import run_forever, scan_once
+from .solana.webhooks import (
+    delete_webhook,
+    find_precam_hooks,
+    list_webhooks,
+    sync_watched_addresses,
+)
 from .workers.autotune import autotune_kol_weights, prune_watchlist
 from .workers.backtest import leaderboard as backtest_leaderboard, run_backtest
 from .workers.paper import (
@@ -43,6 +49,7 @@ pump_app = typer.Typer(no_args_is_help=True, help="Pump.fun new-mint scanner + r
 backtest_app = typer.Typer(no_args_is_help=True, help="Backtest stored signals against TP/SL strategies")
 autotune_app = typer.Typer(no_args_is_help=True, help="Auto-tune KOL weights + prune watch list from backtest results")
 paper_app = typer.Typer(no_args_is_help=True, help="Paper-trade simulator: virtual portfolio against live signals")
+webhook_app = typer.Typer(no_args_is_help=True, help="Helius webhooks: push-based smart-money watcher")
 app.add_typer(kol_app, name="kol")
 app.add_typer(tw_app, name="twitter")
 app.add_typer(wallet_app, name="wallet")
@@ -50,6 +57,7 @@ app.add_typer(pump_app, name="pump")
 app.add_typer(backtest_app, name="backtest")
 app.add_typer(autotune_app, name="autotune")
 app.add_typer(paper_app, name="paper")
+app.add_typer(webhook_app, name="webhook")
 
 
 def _arun(coro):
@@ -832,6 +840,112 @@ def paper_leaderboard_cmd(
                 f"{r['win_rate']*100:>4.0f}% {r['avg_pnl_pct']:>+6.1f}% "
                 f"{r['expectancy']:>+6.1f}% {r['sum_usd']:>+8.2f}"
             )
+
+    _arun(_run())
+
+
+@webhook_app.command("sync")
+def webhook_sync_cmd(
+    base_url: str = typer.Option(
+        "", help="Public base URL of this server (default: WEBHOOK_PUBLIC_URL)"
+    ),
+    auth: str = typer.Option(
+        "", help="Auth header value (default: WEBHOOK_SECRET)"
+    ),
+) -> None:
+    """Reconcile Helius webhooks with the current is_watched=True wallet list.
+
+    Creates / updates / deletes hooks under our base URL so the registered
+    addresses always match the local watch list.
+    """
+
+    async def _run():
+        if not settings.helius_api_key:
+            typer.echo("HELIUS_API_KEY required for webhook commands", err=True)
+            raise typer.Exit(1)
+        await init_db()
+        url = base_url or settings.webhook_public_url
+        if not url:
+            typer.echo(
+                "WEBHOOK_PUBLIC_URL is empty — pass --base-url or set it in .env",
+                err=True,
+            )
+            raise typer.Exit(1)
+        secret = auth or settings.webhook_secret
+        async with SessionLocal() as s:
+            watched = list(
+                (
+                    await s.execute(
+                        select(Wallet).where(Wallet.is_watched == True)  # noqa: E712
+                    )
+                ).scalars().all()
+            )
+        addresses = [w.address for w in watched]
+        summary = await sync_watched_addresses(
+            addresses, base_url=url, auth_header=secret
+        )
+        typer.echo(
+            f"target {summary['url']}\n"
+            f"  addresses watched: {summary['total_addresses']}\n"
+            f"  webhooks created : {summary['created']}\n"
+            f"  webhooks updated : {summary['updated']}\n"
+            f"  webhooks deleted : {summary['deleted']}"
+        )
+
+    _arun(_run())
+
+
+@webhook_app.command("list")
+def webhook_list_cmd(precam_only: bool = typer.Option(True, help="Filter to our base URL")) -> None:
+    async def _run():
+        if not settings.helius_api_key:
+            typer.echo("HELIUS_API_KEY required for webhook commands", err=True)
+            raise typer.Exit(1)
+        await init_db()
+        if precam_only and settings.webhook_public_url:
+            base = settings.webhook_public_url.rstrip("/") + "/webhooks/helius"
+            hooks = await find_precam_hooks(base)
+        else:
+            hooks = await list_webhooks()
+        if not hooks:
+            typer.echo("(no webhooks)")
+            return
+        for h in hooks:
+            hid = h.get("webhookID") or h.get("id") or "?"
+            url = h.get("webhookURL") or "?"
+            addrs = h.get("accountAddresses") or []
+            typer.echo(f"{hid}  {url}  ({len(addrs)} addrs)")
+
+    _arun(_run())
+
+
+@webhook_app.command("delete")
+def webhook_delete_cmd(
+    webhook_id: str = typer.Argument("", help="ID to delete; omit for --all"),
+    all_: bool = typer.Option(False, "--all", help="Delete every precam-owned hook"),
+) -> None:
+    async def _run():
+        if not settings.helius_api_key:
+            typer.echo("HELIUS_API_KEY required for webhook commands", err=True)
+            raise typer.Exit(1)
+        await init_db()
+        if all_:
+            base = (settings.webhook_public_url or "").rstrip("/") + "/webhooks/helius"
+            hooks = await find_precam_hooks(base) if settings.webhook_public_url else []
+            if not hooks:
+                typer.echo("(nothing to delete)")
+                return
+            for h in hooks:
+                hid = h.get("webhookID") or h.get("id") or ""
+                if hid:
+                    await delete_webhook(hid)
+                    typer.echo(f"deleted {hid}")
+        elif webhook_id:
+            await delete_webhook(webhook_id)
+            typer.echo(f"deleted {webhook_id}")
+        else:
+            typer.echo("provide an ID or --all", err=True)
+            raise typer.Exit(1)
 
     _arun(_run())
 

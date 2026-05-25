@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     watcher_min_buy_usd: float = 50.0
     watcher_convergence_window_min: int = 60
 
+    webhook_public_url: str = ""
+    webhook_secret: str = ""
+
     paper_starting_balance: float = 1000.0
     paper_position_size_usd: float = 50.0
     paper_max_concurrent: int = 10

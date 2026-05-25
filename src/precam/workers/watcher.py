@@ -92,6 +92,69 @@ def _format_buy_alert(*, wallet: Wallet, trade: dict, meta: dict | None, converg
     )
 
 
+async def process_trades(
+    *,
+    new_trades: list[dict],
+    wallet_by_addr: dict[str, Wallet],
+    watched_addrs: set[str],
+    dex: DexScreenerClient,
+) -> int:
+    """Persist new Trade rows + fire alerts. Shared by polling watcher and
+    the webhook handler. `wallet_by_addr` provides Wallet metadata for
+    labels in the alert; if a trader is not in the dict, the trade is
+    persisted but no alert fires (we only alert on watched wallets)."""
+    if not new_trades:
+        return 0
+
+    alerts = 0
+    async with SessionLocal() as s:
+        for t in new_trades:
+            if t["mint"] in QUOTE_MINTS:
+                continue
+            existing = await s.execute(
+                select(Trade).where(
+                    Trade.tx_sig == t["tx_sig"],
+                    Trade.wallet == t["wallet"],
+                    Trade.mint == t["mint"],
+                    Trade.side == t["side"],
+                )
+            )
+            if existing.scalar_one_or_none():
+                continue
+            s.add(Trade(**t))
+
+            if (
+                t["side"] != "buy"
+                or t["amount_usd"] < settings.watcher_min_buy_usd
+                or t["wallet"] not in wallet_by_addr
+            ):
+                continue
+            await s.flush()
+            conv = await _convergence_count(
+                s, t["mint"], watched_addrs, settings.watcher_convergence_window_min
+            )
+            meta = None
+            try:
+                meta = await dex.get_token(t["mint"])
+            except Exception:
+                pass
+            msg = _format_buy_alert(
+                wallet=wallet_by_addr[t["wallet"]],
+                trade=t,
+                meta=meta,
+                convergence=conv,
+            )
+            if await telegram.send(msg):
+                alerts += 1
+                logger.success(
+                    f"alert: {t['wallet'][:6]}.. bought "
+                    f"{(meta or {}).get('symbol') or t['mint'][:6]} "
+                    f"${t['amount_usd']:.0f} (conv={conv})"
+                )
+        await s.commit()
+    return alerts
+
+
 async def _convergence_count(
     session, mint: str, watched_addrs: set[str], window_min: int
 ) -> int:
@@ -139,50 +202,21 @@ async def _poll_wallet(
     for tx in reversed(new_txs):
         new_trades.extend(parse_swap(tx, sol_usd=sol_usd))
 
-    alerts_sent = 0
-    async with SessionLocal() as s:
-        for t in new_trades:
-            if t["mint"] in QUOTE_MINTS:
-                continue
-            existing = await s.execute(
-                select(Trade).where(
-                    Trade.tx_sig == t["tx_sig"],
-                    Trade.wallet == t["wallet"],
-                    Trade.mint == t["mint"],
-                    Trade.side == t["side"],
-                )
-            )
-            if existing.scalar_one_or_none():
-                continue
-            s.add(Trade(**t))
+    alerts_sent = await process_trades(
+        new_trades=new_trades,
+        wallet_by_addr={wallet.address: wallet},
+        watched_addrs=watched_addrs,
+        dex=dex,
+    )
 
-            if t["side"] == "buy" and t["amount_usd"] >= settings.watcher_min_buy_usd:
-                await s.flush()
-                conv = await _convergence_count(
-                    s, t["mint"], watched_addrs, settings.watcher_convergence_window_min
-                )
-                meta = None
-                try:
-                    meta = await dex.get_token(t["mint"])
-                except Exception:
-                    pass
-                msg = _format_buy_alert(
-                    wallet=wallet, trade=t, meta=meta, convergence=conv
-                )
-                if await telegram.send(msg):
-                    alerts_sent += 1
-                    logger.success(
-                        f"alert: @{wallet.address[:6]} bought "
-                        f"{(meta or {}).get('symbol') or t['mint'][:6]} "
-                        f"${t['amount_usd']:.0f} (conv={conv})"
-                    )
-
-        res = await s.execute(select(Wallet).where(Wallet.address == wallet.address))
-        w_db = res.scalar_one_or_none()
-        if w_db and latest_sig:
-            w_db.last_seen_sig = latest_sig
-            s.add(w_db)
-        await s.commit()
+    if latest_sig:
+        async with SessionLocal() as s:
+            res = await s.execute(select(Wallet).where(Wallet.address == wallet.address))
+            w_db = res.scalar_one_or_none()
+            if w_db:
+                w_db.last_seen_sig = latest_sig
+                s.add(w_db)
+                await s.commit()
 
     return alerts_sent
 

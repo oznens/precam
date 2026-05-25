@@ -1,9 +1,13 @@
 from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Header, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+from loguru import logger
 from sqlalchemy import func, select
+
+from .config import settings
+from .workers.webhook_handler import handle_helius_batch
 
 from .db import (
     BacktestRun,
@@ -297,6 +301,32 @@ async def paper_page(request: Request):
             "roi": roi,
         },
     )
+
+
+@app.post("/webhooks/helius")
+async def webhook_helius(
+    request: Request,
+    authorization: str | None = Header(default=None),
+):
+    """Helius enhanced-transactions webhook endpoint."""
+    if settings.webhook_secret and authorization != settings.webhook_secret:
+        raise HTTPException(status_code=401, detail="invalid auth header")
+    try:
+        body = await request.json()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"bad json: {e}")
+    if not isinstance(body, list):
+        raise HTTPException(status_code=400, detail="expected a JSON array")
+    try:
+        result = await handle_helius_batch(body)
+    except Exception as e:
+        logger.exception(f"webhook processing failed: {e}")
+        raise HTTPException(status_code=500, detail="processing error")
+    logger.info(
+        f"webhook: received={result['received']} "
+        f"trades={result['trades']} alerts={result['alerts']}"
+    )
+    return result
 
 
 @app.get("/api/signals")
