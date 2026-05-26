@@ -12,7 +12,7 @@ from ._ratelimit import AsyncRateLimiter
 # above ~3-4 RPS once you've spent some daily credits. 3 RPS is the sweet spot:
 # slow enough to never trip the limit, fast enough that a 50-wallet refresh
 # (~150 calls) finishes in under a minute.
-_HELIUS_LIMITER = AsyncRateLimiter(per_second=3.0)
+_HELIUS_LIMITER = AsyncRateLimiter(per_second=1.0)
 
 
 class HeliusClient:
