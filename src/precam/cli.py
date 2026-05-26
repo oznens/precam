@@ -29,6 +29,7 @@ from .solana.webhooks import (
     sync_watched_addresses,
 )
 from .analytics.convergence import find_convergence
+from .workers.cobuyers import find_cobuyers
 from .workers.autotune import autotune_kol_weights, prune_watchlist
 from .workers.backtest import leaderboard as backtest_leaderboard, run_backtest
 from .workers.paper import (
@@ -495,6 +496,48 @@ def wallet_convergence(
                 typer.echo(
                     f"    {w['address']:<44}  ${w['usd']:>8,.0f}  "
                     f"{w['first_ts'].strftime('%H:%M:%S')}"
+                )
+
+    _arun(_run())
+
+
+@wallet_app.command("cobuyers")
+def wallet_cobuyers(
+    seed: str = typer.Argument(..., help="Seed wallet to find co-buyers for"),
+    days: float = typer.Option(1.0, help="Look-back over the seed's buys"),
+    window_minutes: float = typer.Option(30.0, help="Co-buy window around seed's buy time"),
+    min_overlap: int = typer.Option(2, help="Min number of seed mints a candidate must share"),
+    max_mints: int = typer.Option(20, help="Cap on how many seed mints to scan (API cost)"),
+    limit: int = typer.Option(20, help="Max candidates to print"),
+) -> None:
+    """Find wallets that bought the same mints as SEED inside a tight window."""
+
+    async def _run():
+        await init_db()
+        result = await find_cobuyers(
+            seed_wallet=seed,
+            days=days,
+            window_minutes=window_minutes,
+            min_overlap=min_overlap,
+            max_mints=max_mints,
+        )
+        n_scanned = result["mints_scanned"]
+        cands = result["candidates"]
+        typer.echo(
+            f"seed={seed}  mints_scanned={n_scanned}  window=±{window_minutes:g}m  "
+            f"found {len(cands)} candidates"
+        )
+        if not cands:
+            return
+        typer.echo(f"\n{'candidate':<46} {'overlap':>7} {'total$':>10}")
+        for c in cands[:limit]:
+            typer.echo(
+                f"{c['address']:<46} {c['n_overlap_mints']:>7} {c['total_usd']:>10,.0f}"
+            )
+            for h in c["hits"]:
+                typer.echo(
+                    f"    {h['mint']:<44}  ${h['usd']:>7,.0f}  Δ{h['delta_s']:>5.0f}s  "
+                    f"{h['ts'].strftime('%Y-%m-%d %H:%M:%S')}"
                 )
 
     _arun(_run())

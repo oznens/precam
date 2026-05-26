@@ -55,6 +55,51 @@ class GeckoTerminalClient:
         )
         return [_shape_pool(p) for p in (data.get("data") or [])]
 
+    async def top_pool_for_token(self, mint: str) -> str | None:
+        """Return the highest-h24-volume pool address for a mint, or None."""
+        data = await self._get(f"/networks/solana/tokens/{mint}/pools")
+        pools = data.get("data") or []
+        best_addr: str | None = None
+        best_vol = -1.0
+        for p in pools:
+            attrs = p.get("attributes") or {}
+            vol = float((attrs.get("volume_usd") or {}).get("h24") or 0.0)
+            if vol > best_vol:
+                best_vol = vol
+                best_addr = attrs.get("address")
+        return best_addr
+
+    async def pool_trades(self, pool_address: str) -> list[dict[str, Any]]:
+        """Return up to ~300 most recent trades on a pool with wallet addresses.
+
+        Each trade has kind (buy/sell), volume_in_usd, tx_from_address (the
+        trader's wallet), and block_timestamp. This is the discovery primitive
+        for co-buyer detection: trades on a hot pool reveal which other wallets
+        are stepping into the same name our watched wallets just bought.
+        """
+        data = await self._get(f"/networks/solana/pools/{pool_address}/trades")
+        out: list[dict[str, Any]] = []
+        for t in data.get("data") or []:
+            a = t.get("attributes") or {}
+            ts_iso = a.get("block_timestamp")
+            ts: datetime | None = None
+            if ts_iso:
+                try:
+                    ts = datetime.fromisoformat(ts_iso.replace("Z", "+00:00"))
+                    if ts.tzinfo is None:
+                        ts = ts.replace(tzinfo=timezone.utc)
+                except Exception:
+                    ts = None
+            out.append(
+                {
+                    "kind": a.get("kind") or "",
+                    "wallet": a.get("tx_from_address") or "",
+                    "volume_usd": float(a.get("volume_in_usd") or 0.0),
+                    "block_time": ts,
+                }
+            )
+        return out
+
     async def new_pools(self, pages: int = 1) -> list[dict[str, Any]]:
         """Recently created Solana pools (~newest first). 20 per page, max page 10.
 
