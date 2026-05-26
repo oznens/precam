@@ -25,8 +25,41 @@ class DexScreenerClient:
         sol_pairs = [p for p in pairs if p.get("chainId") == "solana"]
         if not sol_pairs:
             return None
-        best = max(sol_pairs, key=lambda p: float((p.get("liquidity") or {}).get("usd") or 0.0))
-        return _shape(best, mint)
+        return _select_pair(sol_pairs, mint)
+
+
+def _select_pair(pairs: list[dict[str, Any]], mint: str) -> dict[str, Any] | None:
+    """Pick the most-liquid pair whose price is consistent with the cohort.
+
+    DexScreener occasionally reports inverted prices on some DLMM/CLMM pools
+    (e.g. a Meteora JUP pool listing JUP at $997 when the real price is $0.20).
+    Naively picking the top-liquidity pair lands on that bogus quote.
+
+    Strategy: take the three most-liquid pairs, use their *price median* as
+    truth, then pick the most-liquid pair whose price is within 5x of that
+    median. Falls back to top-liquidity if nothing matches (single-pool tokens).
+    """
+    ranked = sorted(
+        pairs,
+        key=lambda p: float((p.get("liquidity") or {}).get("usd") or 0.0),
+        reverse=True,
+    )
+    prices = [
+        float(p.get("priceUsd") or 0.0)
+        for p in ranked[:5]
+        if float(p.get("priceUsd") or 0.0) > 0
+    ]
+    if len(prices) >= 2:
+        prices.sort()
+        median = prices[len(prices) // 2]
+        for p in ranked:
+            price = float(p.get("priceUsd") or 0.0)
+            if price <= 0:
+                continue
+            ratio = price / median if median > 0 else 1
+            if 0.2 <= ratio <= 5.0:
+                return _shape(p, mint)
+    return _shape(ranked[0], mint)
 
 
 def _shape(p: dict[str, Any], mint: str) -> dict[str, Any]:

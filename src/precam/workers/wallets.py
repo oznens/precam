@@ -11,6 +11,7 @@ from ..analytics.positions import build_positions, compute_stats
 from ..analytics.swaps import parse_swap
 from ..config import settings
 from ..db import Position, SessionLocal, Trade, Wallet, WalletStat
+from ..solana.dexscreener import DexScreenerClient
 from ..solana.helius import HeliusClient
 from ..solana.trending import GeckoTerminalClient
 
@@ -321,3 +322,99 @@ async def refresh_all(
 
     await asyncio.gather(*(_one(w.address) for w in wallets))
     return succeeded, failed
+
+
+async def audit_wallets(
+    *,
+    only_watched: bool = True,
+    auto_unwatch: bool = False,
+    rugged_to_realized_ratio: float = 2.0,
+    min_open_usd: float = 1000.0,
+) -> list[dict]:
+    """Check open positions of (watched) wallets against current DexScreener prices.
+
+    A wallet is flagged "rugged-heavy" when the value of its open positions that
+    have no DexScreener listing (effectively dead) exceeds `rugged_to_realized_ratio`
+    times its total realized PnL. These wallets came up in discovery because they
+    were buying graduate pools, but the picks turned out to be dead memes — the
+    opposite of alpha.
+
+    Returns one dict per audited wallet with realized / rugged / live / flagged.
+    If auto_unwatch=True, also sets is_watched=False on flagged wallets.
+    """
+    async with SessionLocal() as s:
+        q = select(Wallet)
+        if only_watched:
+            q = q.where(Wallet.is_watched == True)  # noqa: E712
+        wallets = list((await s.execute(q)).scalars().all())
+        addrs = [w.address for w in wallets]
+        positions = list((await s.execute(
+            select(Position).where(Position.wallet.in_(addrs), Position.closed_at.is_(None))
+        )).scalars().all()) if addrs else []
+        stats = {st.wallet: st for st in (await s.execute(
+            select(WalletStat).where(WalletStat.wallet.in_(addrs))
+        )).scalars().all()} if addrs else {}
+
+    by_wallet: dict[str, list[Position]] = {}
+    for p in positions:
+        by_wallet.setdefault(p.wallet, []).append(p)
+
+    unique_mints = list({p.mint for p in positions})
+    dex = DexScreenerClient()
+    sem = asyncio.Semaphore(4)
+    prices: dict[str, dict | None] = {}
+
+    async def fetch(mint: str):
+        async with sem:
+            try:
+                prices[mint] = await dex.get_token(mint)
+            except Exception:
+                prices[mint] = None
+
+    await asyncio.gather(*(fetch(m) for m in unique_mints))
+
+    results: list[dict] = []
+    flagged: list[str] = []
+    for w in wallets:
+        st = stats.get(w.address)
+        realized = st.total_realized_pnl_usd if st else 0.0
+        ps = by_wallet.get(w.address, [])
+        live_value = rugged_value = 0.0
+        live_n = rugged_n = 0
+        for p in ps:
+            token = prices.get(p.mint)
+            if token and token.get("liquidity_usd", 0) >= 500:
+                live_value += (p.bought_token or 0) * token["price_usd"]
+                live_n += 1
+            else:
+                rugged_value += p.bought_usd or 0
+                rugged_n += 1
+
+        is_flagged = (
+            rugged_value >= min_open_usd
+            and (realized <= 0 or rugged_value > realized * rugged_to_realized_ratio)
+        )
+        results.append({
+            "address": w.address,
+            "label": w.label or "",
+            "realized_pnl": realized,
+            "open_live_n": live_n,
+            "open_live_value_usd": live_value,
+            "open_rugged_n": rugged_n,
+            "open_rugged_usd": rugged_value,
+            "flagged": is_flagged,
+        })
+        if is_flagged:
+            flagged.append(w.address)
+
+    if auto_unwatch and flagged:
+        async with SessionLocal() as s:
+            for addr in flagged:
+                w = (await s.execute(select(Wallet).where(Wallet.address == addr))).scalar_one_or_none()
+                if w:
+                    w.is_watched = False
+                    s.add(w)
+            await s.commit()
+        logger.success(f"auto-unwatched {len(flagged)} rugged-heavy wallet(s)")
+
+    return results

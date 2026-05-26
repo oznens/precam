@@ -39,6 +39,7 @@ from .workers.paper import (
 )
 from .workers.pump import listen as pump_listen, rescore_loop, rescore_pending
 from .workers.wallets import (
+    audit_wallets,
     discover_from_graduated,
     discover_from_trending,
     refresh_all,
@@ -421,6 +422,42 @@ def wallet_watch(address: str) -> None:
                 s.add(w)
                 typer.echo(f"watching {address}")
             await s.commit()
+
+    _arun(_run())
+
+
+@wallet_app.command("audit")
+def wallet_audit(
+    only_watched: bool = typer.Option(True, "--watched/--all", help="Audit only is_watched=True"),
+    auto_unwatch: bool = typer.Option(False, help="Demote rugged-heavy wallets to is_watched=False"),
+    ratio: float = typer.Option(2.0, help="Rugged/realized ratio threshold to flag a wallet"),
+    min_rugged: float = typer.Option(1000.0, help="Min rugged USD to consider flagging"),
+) -> None:
+    """Audit open positions against DexScreener — surface rugged exposure."""
+
+    async def _run():
+        await init_db()
+        rows = await audit_wallets(
+            only_watched=only_watched,
+            auto_unwatch=auto_unwatch,
+            rugged_to_realized_ratio=ratio,
+            min_open_usd=min_rugged,
+        )
+        rows.sort(key=lambda r: r["open_rugged_usd"], reverse=True)
+        typer.echo(
+            f"{'wallet':<46} {'realized$':>10} {'live#':>6} {'live$':>9} "
+            f"{'rug#':>5} {'rugged$':>10} {'flag'}"
+        )
+        for r in rows:
+            mark = " 🚩 RUG" if r["flagged"] else ""
+            typer.echo(
+                f"{r['address']:<46} {r['realized_pnl']:>10,.0f} "
+                f"{r['open_live_n']:>6} {r['open_live_value_usd']:>9,.0f} "
+                f"{r['open_rugged_n']:>5} {r['open_rugged_usd']:>10,.0f}{mark}"
+            )
+        flagged_n = sum(1 for r in rows if r["flagged"])
+        action = "auto-unwatched" if auto_unwatch else "would demote"
+        typer.echo(f"\n{flagged_n} flagged ({action} if --auto-unwatch)")
 
     _arun(_run())
 
