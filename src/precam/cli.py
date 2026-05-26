@@ -28,6 +28,7 @@ from .solana.webhooks import (
     list_webhooks,
     sync_watched_addresses,
 )
+from .analytics.convergence import find_convergence
 from .workers.autotune import autotune_kol_weights, prune_watchlist
 from .workers.backtest import leaderboard as backtest_leaderboard, run_backtest
 from .workers.paper import (
@@ -458,6 +459,43 @@ def wallet_audit(
         flagged_n = sum(1 for r in rows if r["flagged"])
         action = "auto-unwatched" if auto_unwatch else "would demote"
         typer.echo(f"\n{flagged_n} flagged ({action} if --auto-unwatch)")
+
+    _arun(_run())
+
+
+@wallet_app.command("convergence")
+def wallet_convergence(
+    hours: float = typer.Option(24.0, help="Look-back window in hours"),
+    min_wallets: int = typer.Option(2, help="Min distinct wallets buying same mint"),
+    only_watched: bool = typer.Option(True, "--watched/--all", help="Restrict to is_watched"),
+    limit: int = typer.Option(20, help="Max rows to print"),
+) -> None:
+    """Surface mints that >= min-wallets bought inside the window — alpha overlap."""
+
+    async def _run():
+        await init_db()
+        rows = await find_convergence(
+            window_hours=hours, min_wallets=min_wallets, only_watched=only_watched
+        )
+        if not rows:
+            scope = "watched" if only_watched else "any"
+            typer.echo(f"(no convergence among {scope} wallets in last {hours:g}h)")
+            return
+        typer.echo(
+            f"{'mint':<44} {'n':>3} {'total$':>9} {'spread':>9} {'first_buy(UTC)':<19}"
+        )
+        for r in rows[:limit]:
+            spread = r["spread_minutes"]
+            spread_s = f"{spread:.0f}m" if spread < 120 else f"{spread/60:.1f}h"
+            typer.echo(
+                f"{r['mint']:<44} {r['n_wallets']:>3} {r['total_usd']:>9,.0f} "
+                f"{spread_s:>9} {r['first_buy'].strftime('%Y-%m-%d %H:%M:%S')}"
+            )
+            for w in r["wallets"]:
+                typer.echo(
+                    f"    {w['address']:<44}  ${w['usd']:>8,.0f}  "
+                    f"{w['first_ts'].strftime('%H:%M:%S')}"
+                )
 
     _arun(_run())
 
