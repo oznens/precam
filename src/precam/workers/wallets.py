@@ -11,8 +11,8 @@ from ..analytics.positions import build_positions, compute_stats
 from ..analytics.swaps import parse_swap
 from ..config import settings
 from ..db import Position, SessionLocal, Trade, Wallet, WalletStat
-from ..solana.dexscreener import DexScreenerClient
 from ..solana.helius import HeliusClient
+from ..solana.jupiter import JupiterPriceClient
 from ..solana.trending import GeckoTerminalClient
 
 
@@ -331,10 +331,10 @@ async def audit_wallets(
     rugged_to_realized_ratio: float = 2.0,
     min_open_usd: float = 1000.0,
 ) -> list[dict]:
-    """Check open positions of (watched) wallets against current DexScreener prices.
+    """Check open positions of (watched) wallets against current Jupiter prices.
 
     A wallet is flagged "rugged-heavy" when the value of its open positions that
-    have no DexScreener listing (effectively dead) exceeds `rugged_to_realized_ratio`
+    Jupiter no longer prices (effectively dead) exceeds `rugged_to_realized_ratio`
     times its total realized PnL. These wallets came up in discovery because they
     were buying graduate pools, but the picks turned out to be dead memes — the
     opposite of alpha.
@@ -360,18 +360,13 @@ async def audit_wallets(
         by_wallet.setdefault(p.wallet, []).append(p)
 
     unique_mints = list({p.mint for p in positions})
-    dex = DexScreenerClient()
-    sem = asyncio.Semaphore(4)
-    prices: dict[str, dict | None] = {}
 
-    async def fetch(mint: str):
-        async with sem:
-            try:
-                prices[mint] = await dex.get_token(mint)
-            except Exception:
-                prices[mint] = None
-
-    await asyncio.gather(*(fetch(m) for m in unique_mints))
+    # Jupiter is the authoritative source for live USD price + aggregate
+    # liquidity per mint. Mints that don't come back from Jupiter are either
+    # unlisted or rugged — both reasons to count their notional spend as
+    # "dead capital" against the wallet's quality score.
+    jup = JupiterPriceClient()
+    prices = await jup.prices(unique_mints) if unique_mints else {}
 
     results: list[dict] = []
     flagged: list[str] = []
@@ -383,7 +378,7 @@ async def audit_wallets(
         live_n = rugged_n = 0
         for p in ps:
             token = prices.get(p.mint)
-            if token and token.get("liquidity_usd", 0) >= 500:
+            if token and token["liquidity_usd"] >= 500:
                 live_value += (p.bought_token or 0) * token["price_usd"]
                 live_n += 1
             else:
