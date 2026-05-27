@@ -230,6 +230,20 @@ class Signal(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
+class ConvergenceAlert(SQLModel, table=True):
+    """One row per (mint, n_wallets) we've already alerted on.
+
+    The composite key lets us re-alert when a NEW watched wallet joins an
+    existing convergence (3 wallets is a stronger signal than 2), without
+    repeating the same alert every 30-min poll while the participant count
+    is unchanged.
+    """
+    mint: str = Field(primary_key=True)
+    n_wallets: int = Field(primary_key=True)
+    total_usd: float = 0.0
+    first_alerted_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 engine = create_async_engine(settings.database_url, echo=False, future=True)
 SessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 

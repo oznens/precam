@@ -30,6 +30,7 @@ from .solana.webhooks import (
 )
 from .analytics.convergence import find_convergence
 from .workers.cobuyers import find_cobuyers
+from .workers.convergence_loop import convergence_loop, convergence_scan_once
 from .workers.autotune import autotune_kol_weights, prune_watchlist
 from .workers.backtest import leaderboard as backtest_leaderboard, run_backtest
 from .workers.paper import (
@@ -497,6 +498,32 @@ def wallet_convergence(
                     f"    {w['address']:<44}  ${w['usd']:>8,.0f}  "
                     f"{w['first_ts'].strftime('%H:%M:%S')}"
                 )
+
+    _arun(_run())
+
+
+@wallet_app.command("convergence-loop")
+def wallet_convergence_loop(
+    interval_min: int = typer.Option(30, help="Poll interval in minutes"),
+    window_hours: float = typer.Option(12.0, help="Look-back window for each scan"),
+    min_wallets: int = typer.Option(2, help="Min distinct watched wallets per hit"),
+    once: bool = typer.Option(False, "--once", help="Run a single scan and exit"),
+) -> None:
+    """Recurring convergence detector with Telegram alerts and dedup."""
+
+    async def _run():
+        await init_db()
+        if once:
+            new = await convergence_scan_once(
+                window_hours=window_hours, min_wallets=min_wallets
+            )
+            typer.echo(f"{len(new)} new alert(s) emitted")
+        else:
+            await convergence_loop(
+                interval_min=interval_min,
+                window_hours=window_hours,
+                min_wallets=min_wallets,
+            )
 
     _arun(_run())
 
