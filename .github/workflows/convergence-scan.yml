@@ -1,0 +1,51 @@
+name: convergence-scan
+
+# Polls the convergence detector every 30 minutes. Dedup is handled inside
+# the worker (ConvergenceAlert table), so re-running on the same data is safe
+# — only NEW (mint, n_wallets) tuples fire a Telegram alert.
+#
+# State (SQLite DB at data/runtime/precam.db) lives in the Actions cache
+# keyed by repo. Both this workflow and refresh-watchlist.yml share the same
+# cache, so the convergence scan sees whatever the latest refresh produced.
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: precam-state
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: install package
+        run: pip install -e .
+
+      - name: restore db cache
+        uses: actions/cache@v4
+        with:
+          path: data/runtime
+          # Date-based prefix so the cache key advances daily — within a day
+          # we keep restoring the same key; across days we still match the
+          # restore-key fallback (precam-db-) and pick up the latest cache.
+          key: precam-db-${{ github.run_id }}
+          restore-keys: |
+            precam-db-
+
+      - name: run convergence scan
+        env:
+          HELIUS_API_KEY: ${{ secrets.HELIUS_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: precam wallet convergence-loop --once --window-hours 12
