@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Çıkmış Sorular — Resmî Kaynaklar · KPSS Türkçe</title>
+  <meta name="description" content="KPSS Lisans çıkmış soruları doğrudan resmî ÖSYM kaynağından indir: temel soru kitapçıkları ve cevap anahtarları (yıl yıl)." />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%233f51b5'/%3E%3Ctext x='50' y='68' font-size='56' text-anchor='middle' fill='white' font-family='Arial'%3EŞ%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">Ş</span>
+      <div>
+        <h1>Çıkmış Sorular · Resmî Kaynaklar</h1>
+        <p>KPSS Lisans — doğrudan kaynağından indir</p>
+      </div>
+    </div>
+    <a class="counter" href="index.html" style="text-decoration:none">← Pratiğe dön</a>
+  </header>
+
+  <main class="sources">
+    <div class="note">
+      Aşağıdaki bağlantılar <strong>resmî ÖSYM</strong> sayfalarına gider. Gerçek çıkmış
+      sorular ve cevap anahtarları burada, kaynağından, ücretsiz yayımlanır. Sorular
+      telifli olduğundan bu sitede kopyalanmaz; en doğrusu kaynağından çözmektir.
+      Soru kitapçığını açıp <em>Türkçe</em> bölümünü çalışabilirsin.
+    </div>
+
+    <section class="src-card">
+      <h2>📚 Tüm yıllar — ÖSYM Çıkmış Sorular</h2>
+      <p>ÖSYM'nin yıllara göre tüm çıkmış soru kitapçıklarını listelediği resmî sayfa:</p>
+      <a class="src-link" href="https://www.osym.gov.tr/TR,15071/kpss-cikmis-sorular.html" target="_blank" rel="noopener">
+        ÖSYM · KPSS Çıkmış Sorular (ana liste) ↗
+      </a>
+    </section>
+
+    <section class="src-card">
+      <h2>🎓 KPSS Lisans — Temel Soru Kitapçıkları + Cevap Anahtarları</h2>
+      <p>Genel Yetenek bölümünde <strong>Türkçe</strong> soruları yer alır. Yıl seç, PDF'i indir:</p>
+      <ul class="year-list">
+        <li><a href="https://www.osym.gov.tr/TR,29487/2024-kpss-lisans-genel-yetenek-genel-kultur-ve-egitim-bilimleri-temel-soru-kitapciklari-ve-cevap-anahtarlari--10.html" target="_blank" rel="noopener">2024 KPSS Lisans (GY-GK / Eğitim Bilimleri) ↗</a></li>
+        <li><a href="https://www.osym.gov.tr/TR,23895/2022-kpss-lisans-genel-yetenek-genel-kultur-ve-egitim-bilimleri-temel-soru-kitapciklari-ve-cevap-anahtarlari--10.html" target="_blank" rel="noopener">2022 KPSS Lisans (GY-GK / Eğitim Bilimleri) ↗</a></li>
+        <li><a href="https://www.osym.gov.tr/TR,10277/2016-kpss-lisans-sinavi-temel-soru-kitapciklari-ve-cevap-anahtarlari.html" target="_blank" rel="noopener">2016 KPSS Lisans ↗</a></li>
+        <li><a href="https://www.osym.gov.tr/TR,2900/2014-kpss-lisans-temel-soru-kitapciklari-ve-cevap-anahtarlari-10.html" target="_blank" rel="noopener">2014 KPSS Lisans ↗</a></li>
+      </ul>
+      <p class="hint">Diğer yıllar için ana listeden (yukarıdaki bağlantı) ilgili yılı seçebilirsin.</p>
+    </section>
+
+    <section class="src-card">
+      <h2>🛠️ Kendi PDF'ini uygulamaya yükle</h2>
+      <p>
+        Elindeki bir çıkmış soru PDF'ini bu uygulamanın soru havuzuna dönüştürmek istersen,
+        depodaki <code>tools/extract_pdf.py</code> aracını kullanabilirsin. PDF'i ayrıştırıp
+        <code>questions.json</code> üretir; push'ladığında site güncellenir.
+        (Kullandığın PDF'in hakkına sahip olmaktan sen sorumlusun.)
+      </p>
+      <a class="src-link" href="https://github.com/oznens/precam/blob/claude/kpss-turkce-quiz-app-3ml2fi/tools/extract_pdf.py" target="_blank" rel="noopener">
+        extract_pdf.py — kullanım için README ↗
+      </a>
+    </section>
+  </main>
+</body>
+</html>

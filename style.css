@@ -207,6 +207,67 @@ body {
 .answer-btn:active { transform: scale(.96); }
 .answer-btn.shown { background: var(--teal); box-shadow: 0 8px 20px rgba(0, 137, 123, 0.45); }
 
+/* ---------- Kaynaklar sayfası ---------- */
+.sources {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 26px 18px 60px;
+}
+.note {
+  background: rgba(255, 179, 0, 0.14);
+  border: 1px solid rgba(255, 152, 0, 0.4);
+  border-radius: 14px;
+  padding: 14px 16px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #5b4a12;
+  margin-bottom: 20px;
+}
+.src-card {
+  background: var(--surface);
+  border-radius: 18px;
+  padding: 20px 22px;
+  box-shadow: 0 6px 22px rgba(40, 53, 147, 0.08);
+  margin-bottom: 18px;
+}
+.src-card h2 { font-size: 17px; margin: 0 0 8px; color: var(--indigo-dark); }
+.src-card p { font-size: 14px; line-height: 1.55; margin: 0 0 12px; color: var(--ink); }
+.src-card .hint { font-size: 12.5px; color: var(--muted); margin-top: 10px; }
+.src-link {
+  display: inline-block;
+  background: var(--indigo);
+  color: #fff;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 10px 16px;
+  border-radius: 50px;
+}
+.src-link:hover { background: var(--indigo-dark); }
+.year-list { margin: 0; padding-left: 0; list-style: none; display: grid; gap: 9px; }
+.year-list a {
+  display: block;
+  padding: 12px 14px;
+  border: 1.5px solid #e6e8f2;
+  border-radius: 12px;
+  text-decoration: none;
+  color: var(--indigo-dark);
+  font-weight: 600;
+  font-size: 14px;
+}
+.year-list a:hover { background: #f6f7fc; border-color: #cfd3ea; }
+.topbar .nav-link {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--indigo);
+  background: rgba(63, 81, 181, 0.10);
+  padding: 6px 12px;
+  border-radius: 50px;
+  text-decoration: none;
+}
+.topbar .nav-link:hover { background: rgba(63, 81, 181, 0.18); }
+
 /* ---------- Mobil ---------- */
 @media (max-width: 560px) {
   .stage { padding: 18px 12px 130px; gap: 10px; }
