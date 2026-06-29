@@ -1,68 +1,77 @@
-# KPSS Türkçe — Çıkmış Soru Uygulaması
+# KPSS Türkçe — Çıkmış Soru Pratiği (Web Sitesi)
 
-KPSS **Lisans / Türkçe** için basit ve hızlı bir soru uygulaması (Android, Kotlin + Jetpack Compose).
+KPSS **Lisans / Türkçe** için basit, hızlı bir soru pratiği sitesi. Saf HTML/CSS/JS;
+sunucu gerektirmez, **GitHub Pages**'te statik olarak yayınlanır.
 
-Uygulama açılır açılmaz havuzdan **rastgele bir soru** gösterir. Soldaki **zar** butonuna
-her dokunuşta yeni bir rastgele soru gelir; sorunun **cevabını sağ alt köşedeki** butona
-basarak görebilirsin (cevap şıkkı + kısa çözüm).
+Site açılır açılmaz havuzdan **rastgele bir soru** gösterir. Soldaki **zara** her
+basışta yeni bir rastgele soru gelir; sorunun **cevabı sağ alt köşedeki** kutudan
+görünür (doğru şık + kısa açıklama). Şıklara tıklayıp kendini de sınayabilirsin.
+
+> **1059 soruluk havuz** — yalnızca KPSS Lisans Türkçe konuları.
 
 ## Özellikler
 
-- 🎲 **Sol taraftaki zar butonu** — dönen animasyonla yeni rastgele soru getirir (aynı soruyu üst üste vermez).
-- ✅ **Sağ alt köşede cevap** — "Cevabı gör" düğmesiyle doğru şık ve kısa açıklama açılır/kapanır.
-- 📚 **Geniş soru havuzu** — yalnızca KPSS Lisans Türkçe konuları:
-  sözcükte/cümlede anlam, paragraf, ses bilgisi, yazım kuralları, noktalama,
-  sözcükte yapı, sözcük türleri, fiil, fiilimsi, fiilde çatı, cümlenin ögeleri,
-  cümle türleri ve anlatım bozukluğu.
-- Tüm sorular cihazda yereldir (`app/src/main/assets/questions.json`), internet gerektirmez.
+- 🎲 **Soldaki zar** — dönen animasyonla yeni rastgele soru getirir (aynı soruyu üst üste vermez). Klavyede **Boşluk** tuşu da zar atar.
+- ✅ **Sağ alt köşede cevap** — "Cevabı gör" ile doğru şık ve kısa açıklama açılır. Klavyede **C** tuşu da çalışır.
+- 🖱️ Şıklara tıklayınca doğru/yanlış anında renklenir, çözülen soru sayacı artar.
+- 📚 Konular: sözcükte anlam (eş/zıt anlam), **deyimler**, **atasözleri**, ses bilgisi
+  (yumuşama, ünlü düşmesi, daralma, benzeşme), yazım, noktalama, sözcük türleri,
+  fiil/fiilimsi/çatı, cümlenin ögeleri, cümle türleri, anlatım bozukluğu, paragraf.
+- İnternetsiz çalışır; tüm sorular `questions.json` içinde yereldir.
 
-## Proje yapısı
+## Sorular nereden geliyor?
 
-```
-app/src/main/
-├── java/com/precam/kpssturkce/
-│   ├── MainActivity.kt          # Compose arayüzü (zar + soru kartı + cevap köşesi)
-│   ├── Question.kt              # Soru veri modeli
-│   ├── QuestionRepository.kt    # JSON'dan yükleme + rastgele seçim
-│   └── ui/theme/Theme.kt        # Renkler / Material 3 teması
-├── assets/questions.json        # Soru bankası
-└── res/                         # ikon, strings, tema
-```
+Telifli sınav içeriğini toplu kopyalamak yerine, KPSS Türkçe konularını kapsayan
+**özgün, doğruluğu denetlenmiş** sorular üretildi:
 
-## Derleme ve çalıştırma
+- `data/curated.json` — elle yazılmış örnek sorular (paragraf, anlatım bozukluğu, ögeler vb.).
+- `tools/lexicon.py` — eş/zıt anlamlı sözcük çiftleri.
+- `tools/idioms.py` — deyimler ve anlamları.
+- `tools/proverbs.py` — atasözleri ve anlamları.
+- `tools/phonetics.py` — ses olayları için sözcük listeleri.
 
-Android Studio (Hedgehog veya üzeri) ile:
+`tools/generate.py` bu kaynakları çoktan seçmeli sorulara dönüştürür, doğru cevabın
+**tek** olmasını (çeldiricilerin gerçekten yanlış olmasını) garanti eder ve kök dizine
+`questions.json` yazar.
 
-1. Bu klasörü **Android Studio'da aç** (`File > Open`).
-2. Gradle senkronizasyonunu bekle (AGP 8.5, Gradle 8.7, JDK 17).
-3. Bir emülatör veya cihaz seçip **Run** (▶) ile çalıştır.
-
-Komut satırından (Android SDK kuruluysa):
+### Havuzu yeniden üretmek / genişletmek
 
 ```bash
-./gradlew assembleDebug
-# çıktı: app/build/outputs/apk/debug/app-debug.apk
+# ilgili sözlüğe yeni satır ekle (ör. tools/idioms.py)
+python3 tools/generate.py     # questions.json'u yeniden üretir
 ```
 
-- minSdk 24 (Android 7.0), targetSdk 34.
+`tools/generate.py` çıktının sonunda toplam soru sayısını ve konu dağılımını yazar.
 
-## Yeni soru ekleme
+## Yerelde çalıştırma
 
-`app/src/main/assets/questions.json` dosyasına şu biçimde nesne ekle:
+`fetch` kullanıldığından dosyayı `file://` ile değil küçük bir sunucuyla aç:
 
-```json
-{
-  "id": 57,
-  "topic": "Paragraf",
-  "text": "Soru kökü...",
-  "options": ["A şıkkı", "B şıkkı", "C şıkkı", "D şıkkı", "E şıkkı"],
-  "answerIndex": 2,
-  "explanation": "Kısa çözüm (opsiyonel)."
-}
+```bash
+python3 -m http.server 8000
+# tarayıcıda: http://localhost:8000
 ```
 
-- `answerIndex` 0 tabanlıdır (0 = A, 1 = B, ... 4 = E).
-- `options` 5 şık içermelidir.
+## GitHub Pages'te yayınlama
 
-> Not: Sorular KPSS Türkçe çıkmış-soru tarzında hazırlanmış örneklerdir; havuzu
-> dilediğin kadar genişletebilirsin.
+İki yol var:
+
+**A) Otomatik (önerilen).** Depoda `.github/workflows/pages.yml` hazır.
+`Settings → Pages → Build and deployment → Source` kısmından **GitHub Actions**'ı seç.
+Bu dala (veya `main`) her push'ta site otomatik yayımlanır.
+
+**B) Klasik.** `Settings → Pages → Source: Deploy from a branch` seç, dal olarak bu dalı
+ve klasör olarak `/ (root)` seç.
+
+Yayımlanınca adres şu biçimde olur: `https://oznens.github.io/precam/`
+
+## Dosya yapısı
+
+```
+index.html        # arayüz (zar + soru kartı + cevap köşesi)
+style.css         # stiller
+app.js            # rastgele seçim, cevap gösterme, sayaç
+questions.json    # üretilmiş soru havuzu (1059 soru)
+data/curated.json # elle yazılmış sorular
+tools/            # soru üretici ve kürasyonlu sözlükler
+```

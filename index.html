@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KPSS Türkçe — Çıkmış Soru Pratiği</title>
+  <meta name="description" content="KPSS Lisans Türkçe için rastgele soru pratiği. Zara bas, yeni soru gelsin; cevabı sağ alt köşeden gör." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%233f51b5'/%3E%3Ctext x='50' y='68' font-size='56' text-anchor='middle' fill='white' font-family='Arial'%3EŞ%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">Ş</span>
+      <div>
+        <h1>KPSS Lisans · Türkçe</h1>
+        <p id="poolInfo">Çıkmış soru tarzı pratik</p>
+      </div>
+    </div>
+    <div class="counter" id="counter" title="Çözülen soru / havuz">0 / 0</div>
+  </header>
+
+  <main class="stage">
+    <!-- SOL: rastgele soru getiren zar -->
+    <div class="dice-zone">
+      <button id="diceBtn" class="dice" aria-label="Rastgele yeni soru">
+        <svg viewBox="0 0 100 100" class="dice-svg" aria-hidden="true">
+          <rect x="8" y="8" width="84" height="84" rx="18" />
+          <circle class="pip" cx="30" cy="30" r="7" />
+          <circle class="pip" cx="50" cy="50" r="7" />
+          <circle class="pip" cx="70" cy="30" r="7" />
+          <circle class="pip" cx="30" cy="70" r="7" />
+          <circle class="pip" cx="70" cy="70" r="7" />
+        </svg>
+      </button>
+      <span class="dice-label">Zar at</span>
+    </div>
+
+    <!-- ORTA: soru kartı -->
+    <section class="card" id="card">
+      <span class="topic" id="topic">—</span>
+      <p class="question" id="questionText">Sorular yükleniyor…</p>
+      <ul class="options" id="options"></ul>
+    </section>
+  </main>
+
+  <!-- SAĞ ALT: cevap köşesi -->
+  <div class="answer-corner">
+    <div class="answer-box" id="answerBox" hidden>
+      <div class="answer-label">CEVAP</div>
+      <div class="answer-letter" id="answerLetter">—</div>
+      <div class="answer-explain" id="answerExplain"></div>
+    </div>
+    <button id="answerBtn" class="answer-btn">Cevabı gör</button>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
