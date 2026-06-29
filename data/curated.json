@@ -2520,5 +2520,460 @@
   ],
   "answerIndex": 1,
   "explanation": "'Çıktık' yükleminden, öznenin 'biz' olduğu anlaşılır; cümlenin gizli öznesi vardır."
+ },
+ {
+  "topic": "Paragraf",
+  "text": "Gerçek dostluk, her şeyin yolunda gittiği günlerde değil; işlerin sarpa sardığı anlarda belli olur. Yanında yalnızca iyi günde kalan değil, zor zamanda elini uzatan kişidir asıl dost.\n\nBu parçada asıl anlatılmak istenen nedir?",
+  "options": [
+   "Dostluk yalnızca iyi günlerde sürer.",
+   "Gerçek dost, zor zamanda yanında olan kişidir.",
+   "İyi günde dost olmak her zaman yeterlidir.",
+   "Dostluklar zamanla değerini büsbütün yitirir.",
+   "Zor günler, dostlukları sona erdirir."
+  ],
+  "answerIndex": 1,
+  "explanation": "Parça, asıl dostun zor zamanda destek olan kişi olduğunu vurgular."
+ },
+ {
+  "topic": "Paragraf",
+  "text": "Kar, yalnızca soğuk bir hava olayı değildir. Toprağı örterek bitki köklerini dondan korur; eridiğinde ise yer altı sularını besler. Üstelik kar örtüsü, birçok canlı için doğal bir yalıtım sağlar.\n\nBu parçadan aşağıdakilerden hangisi çıkarılamaz?",
+  "options": [
+   "Kar, bitki köklerini dondan korur.",
+   "Kar eridiğinde yer altı sularına katkı sağlar.",
+   "Kar örtüsü canlılara yalıtım sağlar.",
+   "Kar, yalnızca bir soğuk hava olayı değildir.",
+   "Kar yağışı her yıl giderek azalmaktadır."
+  ],
+  "answerIndex": 4,
+  "explanation": "Parçada kar yağışının azaldığına dair bir bilgi yoktur."
+ },
+ {
+  "topic": "Paragraf",
+  "text": "Trene son anda yetişti. Soluk soluğa bir koltuğa çöktü, camdan dışarı baktı. Şehir yavaş yavaş geride kalırken hafifçe gülümsedi; sonunda yola çıkabilmişti.\n\nBu parçanın anlatımında ağır basan biçim aşağıdakilerden hangisidir?",
+  "options": [
+   "Açıklama",
+   "Betimleme",
+   "Öyküleme",
+   "Tartışma",
+   "Tanımlama"
+  ],
+  "answerIndex": 2,
+  "explanation": "Olaylar bir kişinin ardışık eylemleriyle anlatıldığından öyküleme ağır basar."
+ },
+ {
+  "topic": "Paragraf",
+  "text": "(I) Çay bitkisi, ılıman ve yağışlı iklimlerde yetişir. (II) Ülkemizde özellikle Doğu Karadeniz'de üretilir. (III) Toplanan yapraklar fabrikalarda işlenir. (IV) Kahve, dünyada en çok tüketilen içeceklerden biridir. (V) Bu işlemlerin ardından çay paketlenerek satışa sunulur.\n\nBu parçada düşüncenin akışını bozan cümle hangisidir?",
+  "options": [
+   "I",
+   "II",
+   "III",
+   "IV",
+   "V"
+  ],
+  "answerIndex": 3,
+  "explanation": "Parça çayın yetişme ve işlenme sürecini anlatır; kahveden söz eden IV. cümle konu dışıdır."
+ },
+ {
+  "topic": "Paragraf",
+  "text": "Bir işi severek yapmak, onu yük olmaktan çıkarır. Sevdiğimiz bir uğraşta saatlerin nasıl geçtiğini anlamayız. ----\n\nBu parçada boş bırakılan yere düşüncenin akışına göre aşağıdakilerden hangisi getirilmelidir?",
+  "options": [
+   "Bu yüzden hiçbir iş sevilmeye değmez.",
+   "Çünkü sevgi, en yorucu işi bile kolaylaştırır.",
+   "Oysa çalışmak her zaman sıkıcı bir uğraştır.",
+   "Ne var ki zaman hiç kimseye yetmez.",
+   "Bu nedenle çalışmaktan tümüyle kaçınmalıyız."
+  ],
+  "answerIndex": 1,
+  "explanation": "Boşluk, severek çalışmanın kolaylaştırıcı etkisini gerekçelendirmelidir; akışa uyan B'dir."
+ },
+ {
+  "topic": "Paragraf",
+  "text": "Bir mum, başka mumları tutuşturmakla ışığından bir şey yitirmez. Paylaşılan bilgi de böyledir; verdikçe azalmaz, tam tersine çoğalır.\n\nBu parçaya en uygun başlık aşağıdakilerden hangisidir?",
+  "options": [
+   "Mumların Yapımı",
+   "Paylaştıkça Çoğalan Bilgi",
+   "Karanlıkla Mücadele",
+   "Işığın Fiziği",
+   "Bilginin Sınırları"
+  ],
+  "answerIndex": 1,
+  "explanation": "Parça, paylaşıldıkça çoğalan bilgiyi mum benzetmesiyle anlatır; başlık buna uygundur."
+ },
+ {
+  "topic": "Paragraf",
+  "text": "Olgun bir meyve için ağacın mevsimini beklemek gerekir. Aceleyle koparılan meyve ne tatlı olur ne de doyurucu. İnsanın emekleri de böyledir; zamanından önce sonuç beklemek çoğu kez hayal kırıklığı getirir.\n\nBu parçada asıl anlatılmak istenen nedir?",
+  "options": [
+   "Meyveler her zaman acıdır.",
+   "Emeklerin sonucu için doğru zamanı sabırla beklemek gerekir.",
+   "Acele eden kişi her zaman kazanır.",
+   "Ağaçlar mevsimsiz de meyve verir.",
+   "Sabır, başarının önündeki en büyük engeldir."
+  ],
+  "answerIndex": 1,
+  "explanation": "Parça, emeklerin sonucu için sabırla doğru zamanı beklemek gerektiğini vurgular."
+ },
+ {
+  "topic": "Paragraf",
+  "text": "Bu yazıda size yeni bir uygulama tanıtacağım. Telefonunuzdaki dağınık notları tek bir yerde toplayan, onları etiketlerle düzenleyen oldukça pratik bir araç bu.\n\nBu parçada yazarın amacı aşağıdakilerden hangisidir?",
+  "options": [
+   "Bir ürünü sert biçimde eleştirmek",
+   "Bir uygulamayı okura tanıtmak",
+   "Kişisel bir anısını paylaşmak",
+   "Bir tartışma ortamı başlatmak",
+   "Bir konuda okuru uyarmak"
+  ],
+  "answerIndex": 1,
+  "explanation": "Yazar, işlevlerini anlatarak bir uygulamayı tanıtmayı amaçlamaktadır."
+ },
+ {
+  "topic": "Paragraf",
+  "text": "Ay tutulması, Dünya'nın Güneş ile Ay arasına girmesiyle oluşur. Dünya'nın gölgesi Ay'ın üzerine düşer ve Ay bir süre kararır. Bu olay yalnızca dolunay evresinde görülebilir.\n\nBu parçanın anlatımında ağır basan biçim aşağıdakilerden hangisidir?",
+  "options": [
+   "Öyküleme",
+   "Açıklama",
+   "Tartışma",
+   "Betimleme",
+   "Söyleşme"
+  ],
+  "answerIndex": 1,
+  "explanation": "Bir doğa olayının nasıl oluştuğu bilgi verecek biçimde aktarıldığından açıklama ağır basar."
+ },
+ {
+  "topic": "Paragraf",
+  "text": "(I) Düzenli ders çalışmak, başarının temel koşuludur. (II) Belirli bir program, öğrenmeyi kolaylaştırır. (III) Programlı çalışan öğrenci sınavlara daha hazırlıklı girer. (IV) Yeterli uyku da öğrenmeyi doğrudan etkiler. (V) Uykusuz bir zihin, öğrendiğini kolayca unutur.\n\nBu parça iki paragrafa bölünmek istense ikinci paragraf hangi cümleyle başlar?",
+  "options": [
+   "I",
+   "II",
+   "III",
+   "IV",
+   "V"
+  ],
+  "answerIndex": 3,
+  "explanation": "I-III düzenli çalışmayı, IV-V uykuyu anlatır; ikinci paragraf IV. cümleyle başlar."
+ },
+ {
+  "topic": "Paragraf",
+  "text": "Sabır, insanın en güçlü dayanağıdır. Söz gelimi, yıllarca toprağı işleyen bir çiftçi, ancak sabırla beklediğinde ürününü alabilir.\n\nBu parçada düşünceyi geliştirmek için aşağıdaki yollardan hangisine başvurulmuştur?",
+  "options": [
+   "Tanımlama",
+   "Örnekleme",
+   "Karşılaştırma",
+   "Tanık gösterme",
+   "Sayısal verilerden yararlanma"
+  ],
+  "answerIndex": 1,
+  "explanation": "'Söz gelimi' ifadesiyle bir örnek verildiğinden örnekleme yoluna başvurulmuştur."
+ },
+ {
+  "topic": "Paragraf",
+  "text": "Öğrenmenin yaşı yoktur; yeter ki merak duygusunu yitirmeyelim. Yedi yaşında da yetmiş yaşında da yeni bir şey öğrenmek, insanı diri ve canlı tutar.\n\nBu parçada asıl anlatılmak istenen nedir?",
+  "options": [
+   "Öğrenmek yalnızca çocukluk dönemine özgüdür.",
+   "Merak sürdükçe her yaşta öğrenmek mümkündür.",
+   "Yaşlılıkta yeni bir şey öğrenmek imkânsızdır.",
+   "Merak duygusu, öğrenmeyi zorlaştırır.",
+   "Öğrenmek yalnızca okulda gerçekleşir."
+  ],
+  "answerIndex": 1,
+  "explanation": "Parça, merak korundukça her yaşta öğrenilebileceğini vurgular."
+ },
+ {
+  "topic": "Sözcükte Anlam",
+  "text": "Aşağıdaki cümlelerin hangisinde \"kapı\" sözcüğü mecaz anlamda kullanılmıştır?",
+  "options": [
+   "Evin kapısını usulca çaldı.",
+   "Bu sınav, ona yeni kapılar açtı.",
+   "Çıkarken kapıyı yavaşça kapattı.",
+   "Bahçe kapısı yıllar içinde paslanmıştı.",
+   "Kapının kolu birden kırılıverdi."
+  ],
+  "answerIndex": 1,
+  "explanation": "'Yeni kapılar açmak', yeni fırsatlar doğurmak anlamında mecazdır."
+ },
+ {
+  "topic": "Sözcükte Anlam",
+  "text": "\"Sıcak\" sözcüğü aşağıdaki cümlelerin hangisinde \"içten, samimi\" anlamında kullanılmıştır?",
+  "options": [
+   "Üşüyünce sıcacık bir çorba içti.",
+   "Bizi sıcak bir gülümsemeyle karşıladı.",
+   "Bugün hava beklenenden sıcaktı.",
+   "Sıcak sudan eli yandı.",
+   "Yazın sıcağı insanı bunaltıyordu."
+  ],
+  "answerIndex": 1,
+  "explanation": "'Sıcak gülümseme', içten ve samimi tutumu anlatan mecaz bir kullanımdır."
+ },
+ {
+  "topic": "Sözcükte Anlam",
+  "text": "Aşağıdaki cümlelerin hangisinde \"boş\" sözcüğü mecaz anlamda kullanılmıştır?",
+  "options": [
+   "Bardak tamamen boştu.",
+   "Boş sözlerle vakit kaybetme.",
+   "Çanta bomboş kalmıştı.",
+   "Sınıf, öğle arasında bomboştu.",
+   "Köşede boş bir koltuk buldu."
+  ],
+  "answerIndex": 1,
+  "explanation": "'Boş söz', anlamsız/yararsız söz anlamında mecazdır."
+ },
+ {
+  "topic": "Sözcükte Anlam",
+  "text": "\"Kulak kabartmak\" deyimi aşağıdaki cümlelerin hangisinde doğru kullanılmıştır?",
+  "options": [
+   "Soğuktan kulağı kıpkırmızı oldu.",
+   "Yan masadaki konuşmaya gizlice kulak kabarttı.",
+   "Kulağına yeni bir küpe taktı.",
+   "Yüksek müzikten kulağı çınladı.",
+   "Gürültüden kulaklarını elleriyle kapattı."
+  ],
+  "answerIndex": 1,
+  "explanation": "'Kulak kabartmak', gizlice dinlemeye çalışmak demektir; B'de doğru kullanılmıştır."
+ },
+ {
+  "topic": "Sözcükte Anlam",
+  "text": "Aşağıdaki cümlelerin hangisinde soyut anlamlı bir sözcük vardır?",
+  "options": [
+   "Sokakta üç köpek dolaşıyordu.",
+   "Bu kararı vermek büyük cesaret ister.",
+   "Bahçeye iki fidan dikti.",
+   "Masanın üstünde bir vazo duruyordu.",
+   "Camı tertemiz silip parlattı."
+  ],
+  "answerIndex": 1,
+  "explanation": "'Cesaret' beş duyuyla algılanamayan soyut bir kavramdır."
+ },
+ {
+  "topic": "Sözcükte Anlam",
+  "text": "Aşağıdaki cümlelerin hangisinde \"ışık\" sözcüğü mecaz anlamda kullanılmıştır?",
+  "options": [
+   "Lambanın ışığı giderek azaldı.",
+   "Bu buluş, bilim dünyasına ışık tuttu.",
+   "Güneşin ışığı odayı doldurdu.",
+   "El fenerinin ışığı çok zayıftı.",
+   "Mum ışığında akşam yemeği yediler."
+  ],
+  "answerIndex": 1,
+  "explanation": "'Işık tutmak', bir konuyu aydınlatıp yol göstermek anlamında mecazdır."
+ },
+ {
+  "topic": "Sözcükte Anlam",
+  "text": "\"Basınç\" sözcüğü aşağıdaki cümlelerin hangisinde fizik terimi olarak kullanılmıştır?",
+  "options": [
+   "Üzerimde büyük bir basınç hissediyorum.",
+   "Bir gazın basıncı, sıcaklığı arttıkça yükselir.",
+   "Patronunun basıncına daha fazla dayanamadı.",
+   "Toplumsal basınç altında kendini yalnız hissetti.",
+   "Aile basıncıyla istemediği bir işe girdi."
+  ],
+  "answerIndex": 1,
+  "explanation": "B'de 'basınç', fizik alanına ait bir terim anlamıyla kullanılmıştır."
+ },
+ {
+  "topic": "Sözcükte Anlam",
+  "text": "\"Dolu\" sözcüğü aşağıdaki cümlelerin hangisinde bir hava olayı anlamında kullanılmıştır?",
+  "options": [
+   "Salon, tıka basa doluydu.",
+   "Akşamüstü iri taneli dolu yağdı.",
+   "Bardak ağzına kadar su doluydu.",
+   "Bugün programı oldukça doluydu.",
+   "Sepet, taze meyveyle doluydu."
+  ],
+  "answerIndex": 1,
+  "explanation": "B'de 'dolu', gökten düşen buz tanesi (bir hava olayı) anlamındadır."
+ },
+ {
+  "topic": "Cümlede Anlam",
+  "text": "Aşağıdaki cümlelerden hangisi nesnel bir yargıdır?",
+  "options": [
+   "Bu şehrin en güzel parkı burasıdır.",
+   "Park, beş bin metrekarelik bir alana kuruludur.",
+   "Parktaki yürüyüş yolu insana huzur verir.",
+   "Burası dinlenmek için ideal bir yer.",
+   "Bu, gördüğüm en sakin park."
+  ],
+  "answerIndex": 1,
+  "explanation": "Parkın alanı ölçülüp kanıtlanabilir; nesnel bir yargıdır."
+ },
+ {
+  "topic": "Cümlede Anlam",
+  "text": "Aşağıdaki cümlelerin hangisinde gerçekleşmemiş bir istek (özlem) anlamı vardır?",
+  "options": [
+   "Yarın mutlaka geleceğim.",
+   "Keşke o güzel günleri bir daha yaşayabilsem.",
+   "Bu kitabı geçen ay okudum.",
+   "Akşam yemeği çoktan hazır.",
+   "Bugün hava oldukça serin."
+  ],
+  "answerIndex": 1,
+  "explanation": "'Keşke ... yaşayabilsem' yapısı, gerçekleşmemiş bir isteği/özlemi anlatır."
+ },
+ {
+  "topic": "Cümlede Anlam",
+  "text": "Aşağıdaki cümlelerin hangisinde tahmin anlamı vardır?",
+  "options": [
+   "Bu saatte trafik epeyce yoğun olmalı.",
+   "Sınavı kesinlikle kazandım.",
+   "Kapıyı dün gece kilitledim.",
+   "Geçen hafta sinemaya gittik.",
+   "Su, deniz seviyesinde yüz derecede kaynar."
+  ],
+  "answerIndex": 0,
+  "explanation": "'Yoğun olmalı' ifadesi kesin bilgi değil, bir tahmin bildirir."
+ },
+ {
+  "topic": "Cümlede Anlam",
+  "text": "Aşağıdaki cümlelerin hangisinde azımsama anlamı vardır?",
+  "options": [
+   "Etkinliğe topu topu üç kişi gelmişti.",
+   "Tam yüz kişi salonu doldurdu.",
+   "Herkes istisnasız oradaydı.",
+   "Salon tıklım tıklım dolmuştu.",
+   "Meydanda büyük bir kalabalık vardı."
+  ],
+  "answerIndex": 0,
+  "explanation": "'Topu topu üç kişi' ifadesi, sayıyı az bulup küçümseyen bir azımsama anlamı taşır."
+ },
+ {
+  "topic": "Cümlede Anlam",
+  "text": "Aşağıdaki cümlelerin hangisinde beğeni anlamı vardır?",
+  "options": [
+   "Bu tabloyu hiç beğenmedim.",
+   "Ne kadar zarif bir el işçiliği; doğrusu çok beğendim!",
+   "Yarın yağmur yağabilirmiş.",
+   "Otobüs henüz durağa gelmedi.",
+   "Çıkarken kapıyı kapatır mısın?"
+  ],
+  "answerIndex": 1,
+  "explanation": "B'de konuşan, el işçiliğini överek beğenisini dile getirir."
+ },
+ {
+  "topic": "Noktalama İşaretleri",
+  "text": "Aşağıdaki cümlelerin hangisinde kesme işareti gereksiz kullanılmıştır?",
+  "options": [
+   "İzmir'e geçen yıl taşındılar.",
+   "Okul'a yine geç kaldı.",
+   "Ayşe'nin defteri yırtılmış.",
+   "Cumhuriyet 1923'te ilan edildi.",
+   "Atatürk'ü saygıyla anıyoruz."
+  ],
+  "answerIndex": 1,
+  "explanation": "'Okul' bir cins addır; çekim eki kesmeyle ayrılmaz: 'okula'."
+ },
+ {
+  "topic": "Sözcük Türleri",
+  "text": "Aşağıdaki cümlelerin hangisinde yer-yön zarfı vardır?",
+  "options": [
+   "Bu olaya çok güldü.",
+   "Hızla içeri girdi.",
+   "Dün akşam bize geldi.",
+   "Çok hızlı koştu.",
+   "Sınavda epeyce heyecanlandı."
+  ],
+  "answerIndex": 1,
+  "explanation": "'İçeri', fiili yön bakımından belirttiğinden yer-yön zarfıdır."
+ },
+ {
+  "topic": "Fiil",
+  "text": "Aşağıdaki cümlelerin hangisinde fiil şart (koşul) kipiyle çekimlenmiştir?",
+  "options": [
+   "Erken gelse onu da görürdük.",
+   "Akşam erken geldi.",
+   "Yarın erken gelecek.",
+   "Şu an buraya geliyor.",
+   "Demin buraya gelmiş."
+  ],
+  "answerIndex": 0,
+  "explanation": "'Gelse' biçimi, '-se' ekiyle şart (dilek-koşul) kipinde çekimlenmiştir."
+ },
+ {
+  "topic": "Fiilimsi",
+  "text": "Aşağıdaki cümlelerin hangisinde sıfat-fiil vardır?",
+  "options": [
+   "Hızla koşarak geldi.",
+   "Yüzmeyi çok sever.",
+   "Solan çiçekleri vazodan çıkardı.",
+   "Eve gelince bana haber ver.",
+   "Gülerek olanları anlattı."
+  ],
+  "answerIndex": 2,
+  "explanation": "'Solan', '-an' ekiyle türemiş, 'çiçekler'i niteleyen bir sıfat-fiildir."
+ },
+ {
+  "topic": "Cümlenin Ögeleri",
+  "text": "\"Sınıfın en çalışkan öğrencisi, ödülü gülümseyerek aldı.\" cümlesinin öznesi aşağıdakilerden hangisidir?",
+  "options": [
+   "sınıfın en çalışkan öğrencisi",
+   "ödülü",
+   "gülümseyerek",
+   "aldı",
+   "ödülü gülümseyerek"
+  ],
+  "answerIndex": 0,
+  "explanation": "'Ödülü alan kim?' sorusunun yanıtı 'sınıfın en çalışkan öğrencisi' olduğundan özne budur."
+ },
+ {
+  "topic": "Cümlenin Ögeleri",
+  "text": "\"Çocuklar, akşama kadar bahçede oynadı.\" cümlesinde \"akşama kadar\" sözü hangi ögedir?",
+  "options": [
+   "Özne",
+   "Nesne",
+   "Dolaylı tümleç",
+   "Zarf tümleci",
+   "Yüklem"
+  ],
+  "answerIndex": 3,
+  "explanation": "'Ne zamana kadar oynadı?' sorusunun yanıtı olan 'akşama kadar' zarf tümlecidir."
+ },
+ {
+  "topic": "Cümle Türleri",
+  "text": "Aşağıdaki cümlelerden hangisi yüklemine göre fiil cümlesidir?",
+  "options": [
+   "Bugün hava gerçekten çok güzel.",
+   "O, çok iyi yürekli bir insandır.",
+   "Öğrenciler sabah erken sınava girdi.",
+   "Burası akşamları oldukça sessiz.",
+   "En sevdiğim ders Türkçedir."
+  ],
+  "answerIndex": 2,
+  "explanation": "Yüklemi çekimli bir fiil ('girdi') olduğundan cümle, fiil cümlesidir."
+ },
+ {
+  "topic": "Yazım Kuralları",
+  "text": "Aşağıdaki cümlelerin hangisinde \"de\"nin yazımı yanlıştır?",
+  "options": [
+   "Ben de yarın geleceğim.",
+   "Evde kimse kalmamıştı.",
+   "Sende mi bu kitaptan var?",
+   "O da bizimle gelsin istiyorum.",
+   "Sınıfta da ışıklar yanıyordu."
+  ],
+  "answerIndex": 2,
+  "explanation": "Buradaki 'de' bağlaç olduğundan 'sen de' biçiminde ayrı yazılmalıdır."
+ },
+ {
+  "topic": "Fiil",
+  "text": "\"Geleceğiz\" fiilinin kişisi (şahsı) aşağıdakilerden hangisidir?",
+  "options": [
+   "1. tekil kişi",
+   "2. tekil kişi",
+   "3. tekil kişi",
+   "1. çoğul kişi",
+   "2. çoğul kişi"
+  ],
+  "answerIndex": 3,
+  "explanation": "'-iz' eki birinci çoğul kişiyi gösterir."
+ },
+ {
+  "topic": "Cümlenin Ögeleri",
+  "text": "\"Annem bahçeye birkaç çiçek ekti.\" cümlesinde \"birkaç çiçek\" sözü hangi ögedir?",
+  "options": [
+   "Özne",
+   "Belirtisiz nesne",
+   "Dolaylı tümleç",
+   "Zarf tümleci",
+   "Yüklem"
+  ],
+  "answerIndex": 1,
+  "explanation": "'Ne ekti?' sorusunun yanıtı olan, yalın durumdaki 'birkaç çiçek' belirtisiz nesnedir."
  }
 ]
