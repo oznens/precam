@@ -21,25 +21,24 @@ görünür (doğru şık + kısa açıklama). Şıklara tıklayıp kendini de s�
 
 ## Sorular nereden geliyor?
 
-Telifli sınav içeriğini toplu kopyalamak yerine, KPSS Türkçe konularını kapsayan
-**özgün, doğruluğu denetlenmiş** sorular üretildi:
+Telifli sınav içeriğini kopyalamak yerine, KPSS Lisans Türkçe sınavının **biçimi,
+zorluğu ve konu dağılımı örnek alınarak** elle yazılmış **özgün** sorular kullanılır.
+Gerçek sınav gibi paragraf ve anlam soruları ağırlıktadır; dil bilgisi (ses bilgisi,
+yazım, noktalama, sözcük türleri, fiilimsi, çatı, cümlenin ögeleri, anlatım bozukluğu)
+konuları da kapsanır.
 
-- `data/curated.json` — elle yazılmış örnek sorular (paragraf, anlatım bozukluğu, ögeler vb.).
-- `tools/lexicon.py` — eş/zıt anlamlı sözcük çiftleri.
-- `tools/idioms.py` — deyimler ve anlamları.
-- `tools/proverbs.py` — atasözleri ve anlamları.
-- `tools/phonetics.py` — ses olayları için sözcük listeleri.
-
-`tools/generate.py` bu kaynakları çoktan seçmeli sorulara dönüştürür, doğru cevabın
-**tek** olmasını (çeldiricilerin gerçekten yanlış olmasını) garanti eder ve kök dizine
-`questions.json` yazar.
+- `data/curated.json` — tüm soru havuzu (elle yazılmış, doğruluğu denetlenmiş).
+- `tools/generate.py` — havuzu doğrular (her soru 5 şıklı, tek doğru cevap, yinelenme
+  yok), karıştırır ve kök dizine `questions.json` yazar.
 
 ### Havuzu yeniden üretmek / genişletmek
 
 ```bash
-# ilgili sözlüğe yeni satır ekle (ör. tools/idioms.py)
+# data/curated.json'a yeni soru ekle (topic, text, options[5], answerIndex, explanation)
 python3 tools/generate.py     # questions.json'u yeniden üretir
 ```
+
+`answerIndex` 0 tabanlıdır (0 = A … 4 = E); `options` tam 5 şık içermelidir.
 
 ### Kendi PDF'inizden gerçek çıkmış soru yükleme
 
