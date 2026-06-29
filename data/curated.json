@@ -1675,5 +1675,304 @@
   ],
   "answerIndex": 3,
   "explanation": "Parçada çayın üretim sürecine değinilmemiştir; bu bilgi çıkarılamaz."
+ },
+ {
+  "topic": "Sözcükte Yapı",
+  "text": "Aşağıdaki sözcüklerden hangisi yapıca basittir (kök hâlindedir)?",
+  "options": [
+   "gözlük",
+   "kalemlik",
+   "defter",
+   "yolculuk",
+   "başöğretmen"
+  ],
+  "answerIndex": 2,
+  "explanation": "'Defter' yapım eki almamış, birleşmemiş bir köktür; basittir."
+ },
+ {
+  "topic": "Sözcükte Yapı",
+  "text": "Aşağıdaki sözcüklerden hangisi birleşik yapılıdır?",
+  "options": [
+   "kitaplık",
+   "gecekondu",
+   "sevgi",
+   "tuzluk",
+   "demirci"
+  ],
+  "answerIndex": 1,
+  "explanation": "'Gecekondu', iki sözcüğün birleşmesiyle oluşmuş birleşik bir sözcüktür."
+ },
+ {
+  "topic": "Sözcükte Yapı",
+  "text": "Aşağıdaki sözcüklerden hangisi türemiş bir fiildir?",
+  "options": [
+   "koşmak",
+   "morarmak",
+   "yazmak",
+   "gülmek",
+   "bakmak"
+  ],
+  "answerIndex": 1,
+  "explanation": "'Mor-ar-mak', 'mor' adından yapım ekiyle türetilmiş bir fiildir."
+ },
+ {
+  "topic": "Fiil",
+  "text": "Aşağıdaki cümlelerin hangisinde fiil, dilek (tasarlama) kipiyle çekimlenmiştir?",
+  "options": [
+   "Yarın okula gidecek.",
+   "Şimdi ödevini yapıyor.",
+   "Bir an önce dinlenmelisin.",
+   "Dün akşam bizi aradı.",
+   "Her sabah erken kalkar."
+  ],
+  "answerIndex": 2,
+  "explanation": "'Dinlenmelisin' gereklilik kipiyle çekimlenmiştir; gereklilik bir dilek kipidir."
+ },
+ {
+  "topic": "Fiil",
+  "text": "\"Görmüşsünüz\" fiilinin kişisi (şahsı) aşağıdakilerden hangisidir?",
+  "options": [
+   "1. tekil kişi",
+   "2. tekil kişi",
+   "3. tekil kişi",
+   "2. çoğul kişi",
+   "1. çoğul kişi"
+  ],
+  "answerIndex": 3,
+  "explanation": "'-sünüz' eki ikinci çoğul kişiyi gösterir."
+ },
+ {
+  "topic": "Fiil",
+  "text": "Aşağıdaki cümlelerde geçen fiillerden hangisi yapıca birleşiktir?",
+  "options": [
+   "Çocuk akşama kadar uyudu.",
+   "Bu soruyu sonunda görebildim.",
+   "Cam rüzgârdan açıldı.",
+   "Sabaha kadar yağmur yağdı.",
+   "Kuşlar ağaca kondu."
+  ],
+  "answerIndex": 1,
+  "explanation": "'Görebildim', 'görmek' ve 'bilmek' fiillerinden oluşan birleşik (yeterlilik) bir fiildir."
+ },
+ {
+  "topic": "Fiilde Çatı",
+  "text": "Aşağıdaki cümlelerin hangisinin yüklemi işteş çatılıdır?",
+  "options": [
+   "Çocuklar bahçede koşuştu.",
+   "Camı dikkatsizce kırdı.",
+   "Mektubu özenle yazdı.",
+   "Kapıyı yavaşça açtı.",
+   "Yemeği iştahla yedi."
+  ],
+  "answerIndex": 0,
+  "explanation": "'Koşuştu' fiili, işin birden çok özne tarafından karşılıklı/birlikte yapıldığını gösterir; işteştir."
+ },
+ {
+  "topic": "Fiilde Çatı",
+  "text": "Aşağıdaki cümlelerin hangisinin yüklemi dönüşlü çatılıdır?",
+  "options": [
+   "Çocuk soğuk suyla yıkandı.",
+   "Annesi çocuğu yıkadı.",
+   "Bulaşıkları akşam yıkadı.",
+   "Arabayı garajda yıkadı.",
+   "Ellerini sabunla yıkadı."
+  ],
+  "answerIndex": 0,
+  "explanation": "'Yıkandı' fiilinde özne işi kendi üzerinde yapar; çatı dönüşlüdür."
+ },
+ {
+  "topic": "Cümle Türleri",
+  "text": "Aşağıdaki cümlelerin hangisi biçimce olumsuz, anlamca olumludur?",
+  "options": [
+   "Bu soruyu çözemeyen yok.",
+   "Bugün hiç gelmedi.",
+   "Sınavı geçemedi.",
+   "Kimse ona yardım etmedi.",
+   "O, bu konuda hiçbir şey bilmiyor."
+  ],
+  "answerIndex": 0,
+  "explanation": "'Çözemeyen yok' biçimce olumsuzdur ama 'herkes çözer' anlamı taşır; anlamca olumludur."
+ },
+ {
+  "topic": "Cümle Türleri",
+  "text": "Aşağıdaki cümlelerin hangisi yapısı bakımından kurallı (düz) bir cümledir?",
+  "options": [
+   "Geldi sonunda beklediğimiz mektup.",
+   "Çok güzeldi o eski günler.",
+   "Öğrenciler sınava hazırlanıyor.",
+   "Severim bu sessiz sokakları.",
+   "Koştu çocuk soluk soluğa."
+  ],
+  "answerIndex": 2,
+  "explanation": "Yüklem ('hazırlanıyor') cümlenin sonunda olduğundan cümle kurallıdır."
+ },
+ {
+  "topic": "Cümle Türleri",
+  "text": "Aşağıdaki cümlelerden hangisi yüklemine göre isim cümlesidir?",
+  "options": [
+   "Çocuklar dışarıda oynuyor.",
+   "Bugün hava oldukça güzel.",
+   "Sabaha kadar yağmur yağdı.",
+   "Annem akşam erken geldi.",
+   "Kuşlar gün doğmadan öttü."
+  ],
+  "answerIndex": 1,
+  "explanation": "'Güzel' adına ek eylem gelmesiyle yüklem ad olmuştur; isim cümlesidir."
+ },
+ {
+  "topic": "Noktalama İşaretleri",
+  "text": "Aşağıdaki cümlelerin hangisinde kesme işareti gereksiz yere kullanılmıştır?",
+  "options": [
+   "Ankara'da üç yıl yaşadı.",
+   "Ali'nin kalemi masada kaldı.",
+   "Kitap'ı çantasına koydu.",
+   "2020'de üniversiteyi bitirdi.",
+   "Türkiye'nin nüfusu artıyor."
+  ],
+  "answerIndex": 2,
+  "explanation": "'Kitap' bir cins addır; çekim eki kesme işaretiyle ayrılmaz: 'kitabı'."
+ },
+ {
+  "topic": "Noktalama İşaretleri",
+  "text": "Aşağıdaki cümlelerin hangisinde iki nokta (:) doğru kullanılmıştır?",
+  "options": [
+   "Çantamda şunlar vardı: kitap, kalem ve defter.",
+   "Eve geldim: hemen yemek yedim.",
+   "Bugün hava: çok güzeldi.",
+   "Okula sabah erken: gittim.",
+   "Onun adı: Ali'dir."
+  ],
+  "answerIndex": 0,
+  "explanation": "İki nokta, kendisinden sonra örnek/açıklama sıralandığında kullanılır; A doğrudur."
+ },
+ {
+  "topic": "Cümlenin Ögeleri",
+  "text": "\"Çalışkanlığıyla herkese örnek oluyordu o genç adam.\" cümlesinin yüklemi aşağıdakilerden hangisidir?",
+  "options": [
+   "çalışkanlığıyla",
+   "herkese",
+   "örnek oluyordu",
+   "o genç adam",
+   "örnek"
+  ],
+  "answerIndex": 2,
+  "explanation": "Cümlenin yargı bildiren bölümü 'örnek oluyordu' olduğundan yüklem budur."
+ },
+ {
+  "topic": "Sözcükte Anlam",
+  "text": "Aşağıdaki cümlelerin hangisinde \"pişmek\" sözcüğü mecaz anlamda kullanılmıştır?",
+  "options": [
+   "Yemek, ağır ateşte güzelce pişti.",
+   "Ekmekler fırında pişiyor.",
+   "Bu işte iyice pişti, artık ustalaştı.",
+   "Köfteler az sonra pişer.",
+   "Çorba henüz pişmemiş."
+  ],
+  "answerIndex": 2,
+  "explanation": "'Pişmek' burada deneyim kazanıp ustalaşmak anlamında mecazdır."
+ },
+ {
+  "topic": "Sözcükte Anlam",
+  "text": "Aşağıdaki cümlelerin hangisinde \"yol\" sözcüğü mecaz anlamda kullanılmıştır?",
+  "options": [
+   "Köye giden yol oldukça bozuktu.",
+   "Bu sorunun mutlaka bir yolu vardır.",
+   "Yolda yürürken onu gördüm.",
+   "Eve giden yol epeyce uzundu.",
+   "Belediye yolu yeniden asfaltladı."
+  ],
+  "answerIndex": 1,
+  "explanation": "'Bir yolu vardır' ifadesinde 'yol', çözüm/yöntem anlamında mecazdır."
+ },
+ {
+  "topic": "Cümlede Anlam",
+  "text": "Aşağıdaki cümlelerin hangisinde varsayım anlamı vardır?",
+  "options": [
+   "Diyelim ki sınavı kazandın, sonra ne yapacaksın?",
+   "Yarın kesinlikle geleceğim.",
+   "Bu kitabı geçen hafta okudum.",
+   "Bugün hava çok sıcak.",
+   "Sabah erkenden uyandım."
+  ],
+  "answerIndex": 0,
+  "explanation": "'Diyelim ki' ifadesi, bir durumu var saymaya dayalı varsayım anlamı katar."
+ },
+ {
+  "topic": "Cümlede Anlam",
+  "text": "Aşağıdaki cümlelerin hangisinde küçümseme anlamı vardır?",
+  "options": [
+   "Senin gibi nicelerini gördüm, hiç merak etme.",
+   "O, gerçekten çok başarılı bir öğrencidir.",
+   "Yardımın için sana teşekkür ederim.",
+   "Bugün hava beklenenden güzel.",
+   "Kitabı dün akşam bitirdim."
+  ],
+  "answerIndex": 0,
+  "explanation": "A'da konuşan, karşısındakini değersiz gösteren bir küçümseme anlamı taşır."
+ },
+ {
+  "topic": "Paragraf",
+  "text": "Bir toplumun gelişmişliği yalnızca sahip olduğu teknolojiyle değil; bireylerinin birbirine gösterdiği saygı ve hoşgörüyle de ölçülür. En ileri araçlara sahip bir toplum bile insan ilişkileri zayıfsa huzuru yakalayamaz.\n\nBu parçada asıl vurgulanmak istenen nedir?",
+  "options": [
+   "Teknoloji, gelişmişliğin tek ölçütüdür.",
+   "Bir toplumun gelişmişliğinde insani değerler de belirleyicidir.",
+   "Hoşgörü, teknolojiden çok daha önemsizdir.",
+   "İleri teknolojiye sahip toplumlar her zaman huzurludur.",
+   "İnsan ilişkileri ancak teknolojiyle güçlenir."
+  ],
+  "answerIndex": 1,
+  "explanation": "Parça, gelişmişlikte teknolojinin yanında saygı ve hoşgörü gibi insani değerlerin de belirleyici olduğunu vurgular."
+ },
+ {
+  "topic": "Paragraf",
+  "text": "Bana göre çok okumak tek başına yeterli değildir. Önemli olan, okunanı sorgulamak ve üzerine düşünmektir. Sindirilmeden yapılan okuma zihinde kalıcı bir iz bırakmaz; olsa olsa bir bilgi yığını oluşturur.\n\nBu parçanın anlatımında ağır basan biçim aşağıdakilerden hangisidir?",
+  "options": [
+   "Öyküleme",
+   "Betimleme",
+   "Açıklama",
+   "Tartışma",
+   "Örnekleme"
+  ],
+  "answerIndex": 3,
+  "explanation": "Yazar bir görüşü öne sürüp karşı bir anlayışı eleştirdiğinden anlatımda tartışma ağır basar."
+ },
+ {
+  "topic": "Paragraf",
+  "text": "İyi bir dinleyici olmak, konuşmaktan çoğu zaman daha zordur. Çünkü dinlemek ----\n\nBu parçada boş bırakılan yere düşüncenin akışına göre aşağıdakilerden hangisi getirilmelidir?",
+  "options": [
+   "zaman kaybından başka bir şey değildir.",
+   "karşımızdakine gerçek bir ilgi ve sabır gerektirir.",
+   "herkesin kolayca yapabileceği bir iştir.",
+   "yalnızca sessiz kalıp beklemektir.",
+   "konuşmaktan her zaman daha önemsizdir."
+  ],
+  "answerIndex": 1,
+  "explanation": "'Çünkü' sonrası, dinlemenin neden zor olduğunu açıklamalıdır; ilgi ve sabır gerektirmesi akışa uyar."
+ },
+ {
+  "topic": "Paragraf",
+  "text": "Düzenli spor yapmak, yalnızca bedeni değil ruhu da dinçleştirir. Egzersiz sırasında salgılanan mutluluk hormonları, kişinin stresten uzaklaşmasına yardımcı olur. Bu nedenle hareketli bir yaşam, ruh sağlığı için de önerilir.\n\nBu parçadan aşağıdakilerden hangisi çıkarılamaz?",
+  "options": [
+   "Sporun ruhsal açıdan da yararları vardır.",
+   "Egzersiz, stresle baş etmeye yardımcı olur.",
+   "Spor sırasında bazı hormonlar salgılanır.",
+   "Spor, bedeni dinç tutar.",
+   "Sabah yapılan spor, akşam yapılandan daha yararlıdır."
+  ],
+  "answerIndex": 4,
+  "explanation": "Parçada sporun yapılma saatine ilişkin bir karşılaştırma yoktur; bu bilgi çıkarılamaz."
+ },
+ {
+  "topic": "Anlatım Bozukluğu",
+  "text": "Aşağıdaki cümlelerin hangisinde anlamca çelişen sözlerin bir arada kullanılmasından doğan bir anlatım bozukluğu vardır?",
+  "options": [
+   "Olası bir depreme karşı hazırlıklı olmalıyız.",
+   "Bu işi mutlaka belki hallederim.",
+   "Sabahları her zaman erken kalkar.",
+   "Kitabı büyük bir dikkatle okudu.",
+   "Yola güneş doğmadan çıktık."
+  ],
+  "answerIndex": 1,
+  "explanation": "'Mutlaka' kesinlik, 'belki' olasılık bildirir; bir arada kullanılmaları çelişki yaratır."
  }
 ]
