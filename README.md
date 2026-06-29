@@ -41,6 +41,24 @@ Telifli sınav içeriğini toplu kopyalamak yerine, KPSS Türkçe konularını k
 python3 tools/generate.py     # questions.json'u yeniden üretir
 ```
 
+### Kendi PDF'inizden gerçek çıkmış soru yükleme
+
+Havuzu, **kendinizin sağladığı** bir KPSS çıkmış soru PDF'inden doldurmak isterseniz
+`tools/extract_pdf.py` aracını kullanın. Bu araç içerik içermez; yalnızca sizin
+verdiğiniz dosyayı ayrıştırır. **Kullandığınız PDF'i çoğaltma/yayımlama hakkına sahip
+olmaktan ve telif sorumluluğundan dosyayı sağlayan kişi sorumludur.**
+
+```bash
+pip install pdfplumber
+# cevap anahtarını elle verin:
+python3 tools/extract_pdf.py SORULAR.pdf --answers "1A 2C 3D 4B 5E ..." -o questions.json
+# veya cevap anahtarı ayrı bir metin dosyasındaysa:
+python3 tools/extract_pdf.py SORULAR.pdf --answers-file cevaplar.txt -o questions.json
+```
+
+Üretilen `questions.json` doğrudan sitenin okuduğu dosyadır; commit + push ile yayına
+gider. Çıktıyı her zaman gözden geçirin (PDF düzenleri çok değişkendir).
+
 `tools/generate.py` çıktının sonunda toplam soru sayısını ve konu dağılımını yazar.
 
 ## Yerelde çalıştırma
